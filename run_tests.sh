@@ -7,12 +7,13 @@ go test -v ./... -coverprofile=coverage.out
 
 echo "Let's Test (race detector)"
 go test -race ./...
+#https://go.dev/doc/articles/race_detector
 
-echo "Let's Fuzz"
-go test -fuzz ${FuzzFUNC} -fuzztime 15s
+echo "Let's Fuzz" #cannot use -fuzz flag with multiple packages
+go test ./internal -fuzz ${FuzzFUNC} -fuzztime 15s
 
 echo "Let's Bench"
-go test -v -run=^$ -bench . -benchmem -benchtime=3s ./
+go test -v ./... -run=^$ -bench . -benchmem -benchtime=3s ./
 
 if ! command -v gosec &> /dev/null
 then

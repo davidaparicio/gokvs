@@ -1,9 +1,8 @@
 package internal
 
 import (
+	"errors"
 	"testing"
-
-	"github.com/go-errors/errors"
 )
 
 func TestPut(t *testing.T) {
@@ -88,4 +87,43 @@ func TestDelete(t *testing.T) {
 	if contains {
 		t.Error("Delete failed")
 	}
+}
+
+func BenchmarkGet(b *testing.B) {
+	const key = "read-key"
+	const value = "read-value"
+	store.m[key] = value
+
+	for i := 0; i < b.N; i++ {
+		Get(key)
+	}
+}
+
+func BenchmarkGet_BigInputs(b *testing.B) {
+	keys := []string{"", "bar", "eye", "foo"}
+	values := []string{"empty", "beer", "glasses", "bar"}
+
+	for i, key := range keys {
+		store.m[key] = values[i]
+	}
+
+	for i := 0; i < b.N; i++ {
+		for _, key := range keys {
+			Get(key)
+		}
+	}
+}
+
+func FuzzGet(f *testing.F) {
+	f.Add("kayak")
+	f.Fuzz(func(t *testing.T, str string) {
+		Put("fuzz", str)
+		val, err := Get("fuzz")
+		if err != nil {
+			t.Error("unexpected error:", err)
+		}
+		if val != str {
+			t.Fail()
+		}
+	})
 }
