@@ -13,13 +13,6 @@ var store = struct {
 
 var ErrorNoSuchKey = errors.New("no such key")
 
-func Delete(key string) error {
-	store.Lock()
-	delete(store.m, key)
-	store.Unlock()
-	return nil
-}
-
 func Get(key string) (string, error) {
 	store.RLock()
 	value, ok := store.m[key]
@@ -35,6 +28,13 @@ func Get(key string) (string, error) {
 func Put(key string, value string) error {
 	store.Lock()
 	store.m[key] = value
+	store.Unlock()
+	return nil
+}
+
+func Delete(key string) error {
+	store.Lock()
+	delete(store.m, key)
 	store.Unlock()
 	return nil
 }
