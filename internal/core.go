@@ -13,6 +13,11 @@ var store = struct {
 
 var ErrorNoSuchKey = errors.New("no such key")
 
+type TransactionLogger interface {
+	WriteDelete(key string)
+	WritePut(key, value string)
+}
+
 func Get(key string) (string, error) {
 	store.RLock()
 	value, ok := store.m[key]
