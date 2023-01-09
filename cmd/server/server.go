@@ -2,9 +2,10 @@ package main
 
 import (
 	"errors"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/davidaparicio/gokvs/internal"
 	"github.com/gorilla/mux"
@@ -25,7 +26,7 @@ func keyValuePutHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	key := vars["key"]
 
-	value, err := ioutil.ReadAll(r.Body)
+	value, err := io.ReadAll(r.Body)
 	defer r.Body.Close()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -57,7 +58,9 @@ func keyValueGetHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Write([]byte(value))
+	if _, err := w.Write([]byte(value)); err != nil {
+		log.Printf("ERROR in w.Write for GET key=%s\n", key)
+	}
 
 	log.Printf("GET key=%s\n", key)
 }
@@ -76,7 +79,9 @@ func keyValueDeleteHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func checkMuxHandler(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("imok\n"))
+	if _, err := w.Write([]byte("imok\n")); err != nil {
+		log.Printf("ERROR in w.Write for ruok\n")
+	}
 }
 
 func main() {
@@ -97,7 +102,19 @@ func main() {
 	r.HandleFunc("/v1", notAllowedHandler)
 	r.HandleFunc("/v1/{key}", notAllowedHandler)
 
+	srv := &http.Server{
+		Addr:              ":8080",
+		ReadTimeout:       1 * time.Second,
+		WriteTimeout:      1 * time.Second,
+		IdleTimeout:       30 * time.Second,
+		ReadHeaderTimeout: 2 * time.Second,
+		Handler:           r,
+		//TLSConfig:       tlsConfig,
+	}
+
 	log.Println("Server running on port 8080")
 	// Bind to a port and pass in the mux router
-	log.Fatal(http.ListenAndServe(":8080", r))
+	if err := srv.ListenAndServe(); err != nil {
+		log.Fatal(err)
+	}
 }
