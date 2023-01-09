@@ -15,9 +15,9 @@ func TestGet(t *testing.T) {
 	defer delete(store.m, key)
 
 	// Read a non-thing
-	val, err = Get(key)
+	val, err = Get(key) //nolint:ineffassign
 	if err == nil {
-		t.Error("expected an error")
+		t.Error("expected an error: ", err)
 	}
 	if !errors.Is(err, ErrorNoSuchKey) {
 		t.Error("unexpected error:", err)
@@ -81,7 +81,10 @@ func TestDelete(t *testing.T) {
 		t.Error("key/value doesn't exist")
 	}
 
-	Delete(key)
+	err := Delete(key)
+	if err != nil {
+		t.Error("Delete returns an error: ", err)
+	}
 
 	_, contains = store.m[key]
 	if contains {
@@ -93,15 +96,19 @@ func BenchmarkGet(b *testing.B) {
 	const key = "read-key"
 	const value = "read-value"
 	store.m[key] = value
+	var err error
 
 	for i := 0; i < b.N; i++ {
-		Get(key)
+		if _, err = Get(key); err != nil {
+			b.Error("Get returns an error: ", err)
+		}
 	}
 }
 
 func BenchmarkGet_BigInputs(b *testing.B) {
 	keys := []string{"", "bar", "eye", "foo"}
 	values := []string{"empty", "beer", "glasses", "bar"}
+	var err error
 
 	for i, key := range keys {
 		store.m[key] = values[i]
@@ -109,18 +116,24 @@ func BenchmarkGet_BigInputs(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		for _, key := range keys {
-			Get(key)
+			if _, err = Get(key); err != nil {
+				b.Error("Get returns an error: ", err)
+			}
 		}
 	}
 }
 
 func FuzzGet(f *testing.F) {
+	var val string
+	var err error
 	f.Add("kayak")
 	f.Fuzz(func(t *testing.T, str string) {
-		Put("fuzz", str)
-		val, err := Get("fuzz")
+		if err = Put("fuzz", str); err != nil {
+			t.Error("Get returns an error: ", err)
+		}
+		val, err = Get("fuzz")
 		if err != nil {
-			t.Error("unexpected error:", err)
+			t.Error("Get returns an error: ", err)
 		}
 		if val != str {
 			t.Fail()

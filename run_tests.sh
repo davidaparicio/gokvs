@@ -2,6 +2,14 @@
 
 FuzzFUNC="Fuzz" #"FuzzReverse"
 
+if ! command -v golangci-lint  &> /dev/null
+then
+  echo "golangci-lint required but it's not installed. Skipping."
+else
+  echo "Let's Lint, first.."
+  golangci-lint run #./...
+fi
+
 echo "Let's Test"
 go test -v ./... -coverprofile=coverage.out
 
