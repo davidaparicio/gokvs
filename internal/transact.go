@@ -55,7 +55,8 @@ func NewTransactionLogger(filename string) (*TransactionLogger, error) {
 	var l TransactionLogger = TransactionLogger{wg: &sync.WaitGroup{}}
 
 	// Open the transaction log file for reading and writing.
-	l.file, err = os.OpenFile(filename, os.O_RDWR|os.O_APPEND|os.O_CREATE, 0755)
+	// #nosec [G304] [-- Acceptable risk, for the CWE-22]
+	l.file, err = os.OpenFile(filename, os.O_RDWR|os.O_APPEND|os.O_CREATE, 0600)
 	if err != nil {
 		return nil, fmt.Errorf("cannot open transaction log file: %w", err)
 	}
@@ -118,9 +119,12 @@ func (l *TransactionLogger) ReadEvents() (<-chan Event, <-chan error) {
 		for scanner.Scan() {
 			line := scanner.Text()
 
-			fmt.Sscanf(
+			if _, err := fmt.Sscanf(
 				line, "%d\t%d\t%s\t%s",
-				&e.Sequence, &e.EventType, &e.Key, &e.Value)
+				&e.Sequence, &e.EventType, &e.Key, &e.Value); err != nil {
+				outError <- fmt.Errorf("Scanner error, failure in fmt.Sscanf")
+				return
+			}
 
 			if l.lastSequence >= e.Sequence {
 				outError <- fmt.Errorf("transaction numbers out of sequence")
@@ -129,7 +133,7 @@ func (l *TransactionLogger) ReadEvents() (<-chan Event, <-chan error) {
 
 			uv, err := url.QueryUnescape(e.Value)
 			if err != nil {
-				outError <- fmt.Errorf("vaalue decoding failure: %w", err)
+				outError <- fmt.Errorf("value decoding failure: %w", err)
 				return
 			}
 
