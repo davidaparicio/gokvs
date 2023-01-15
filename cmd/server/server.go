@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -10,6 +11,8 @@ import (
 	"github.com/davidaparicio/gokvs/internal"
 	"github.com/gorilla/mux"
 )
+
+var transact *internal.TransactionLogger
 
 func loggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -40,6 +43,8 @@ func keyValuePutHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusCreated)
+
+	transact.WritePut(key, string(value))
 
 	log.Printf("PUT key=%s value=%s\n", key, string(value))
 }
@@ -75,6 +80,8 @@ func keyValueDeleteHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	transact.WriteDelete(key)
+
 	log.Printf("DELETE key=%s\n", key)
 }
 
@@ -84,7 +91,48 @@ func checkMuxHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func initializeTransactionLog() error {
+	var err error
+
+	transact, err = internal.NewTransactionLogger("/tmp/transactions.log")
+	if err != nil {
+		return fmt.Errorf("failed to create transaction logger: %w", err)
+	}
+
+	events, errors := transact.ReadEvents()
+	count, ok, e := 0, true, internal.Event{}
+
+	for ok && err == nil {
+		select {
+		case err, ok = <-errors:
+
+		case e, ok = <-events:
+			switch e.EventType {
+			case internal.EventDelete: // Got a DELETE event!
+				err = internal.Delete(e.Key)
+				count++
+			case internal.EventPut: // Got a PUT event!
+				err = internal.Put(e.Key, e.Value)
+				count++
+			}
+		}
+	}
+
+	log.Printf("%d events replayed\n", count)
+
+	transact.Run()
+
+	return err
+}
+
 func main() {
+	// Initializes the transaction log and loads existing data, if any.
+	// Blocks until all data is read.
+	err := initializeTransactionLog()
+	if err != nil {
+		panic(err)
+	}
+
 	// Create a new mux router
 	r := mux.NewRouter()
 
