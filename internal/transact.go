@@ -55,6 +55,7 @@ func NewTransactionLogger(filename string) (*TransactionLogger, error) {
 	var l TransactionLogger = TransactionLogger{wg: &sync.WaitGroup{}}
 
 	// Open the transaction log file for reading and writing.
+	// Any writes to this file (created if not exist) will append/no overwrite
 	// #nosec [G304] [-- Acceptable risk, for the CWE-22]
 	l.file, err = os.OpenFile(filename, os.O_RDWR|os.O_APPEND|os.O_CREATE, 0600)
 	if err != nil {
@@ -77,6 +78,7 @@ func (l *TransactionLogger) Run() {
 		for e := range events {
 			l.lastSequence++
 
+			//Write the event to the log
 			_, err := fmt.Fprintf(
 				l.file,
 				"%d\t%d\t%s\t%s\n",
@@ -126,6 +128,7 @@ func (l *TransactionLogger) ReadEvents() (<-chan Event, <-chan error) {
 				return
 			}
 
+			// Sanity check ! Are the sequence numbers in increasing order?
 			if l.lastSequence >= e.Sequence {
 				outError <- fmt.Errorf("transaction numbers out of sequence")
 				return
@@ -138,9 +141,9 @@ func (l *TransactionLogger) ReadEvents() (<-chan Event, <-chan error) {
 			}
 
 			e.Value = uv
-			l.lastSequence = e.Sequence
+			l.lastSequence = e.Sequence // Update last used sequence #
 
-			outEvent <- e
+			outEvent <- e // Send the event along
 		}
 
 		if err := scanner.Err(); err != nil {

@@ -38,3 +38,11 @@ func Delete(key string) error {
 	store.Unlock()
 	return nil
 }
+
+/*// Fatal is equivalent to Print() followed by a call to os.Exit(2).
+func Fatalf(format string, args ...interface{}) {
+	// %v the value in a default format when printing structs
+	log.Printf(format, args...) // https://stackoverflow.com/a/41390023
+	//fmt.Fprintf(os.Stderr, format+"\n", args...)
+	os.Exit(2)
+}*/
