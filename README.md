@@ -4,7 +4,7 @@
 [![Go Report Card](https://goreportcard.com/badge/davidaparicio/gokvs)](https://goreportcard.com/report/davidaparicio/gokvs)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/davidaparicio/gokvs/blob/main/LICENSE.md)
 [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fdavidaparicio%2Fgokvs.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fdavidaparicio%2Fgokvs?ref=badge_shield)
-[![Maintenance](https://img.shields.io/maintenance/yes/2022.svg)]()
+[![Maintenance](https://img.shields.io/maintenance/yes/2023.svg)]()
 [![Twitter](https://img.shields.io/twitter/follow/dadideo.svg?style=social)](https://twitter.com/intent/follow?screen_name=dadideo)
 
 ## Overview

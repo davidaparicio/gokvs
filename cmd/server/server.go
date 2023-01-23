@@ -1,11 +1,14 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
 	"time"
 
 	"github.com/davidaparicio/gokvs/internal"
@@ -159,6 +162,21 @@ func main() {
 		Handler:           r,
 		//TLSConfig:       tlsConfig,
 	}
+
+	// Check for a closing signal
+	go func() {
+		// Graceful shutdown
+		sigquit := make(chan os.Signal, 1)
+		signal.Notify(sigquit, os.Interrupt, os.Kill)
+		sig := <-sigquit
+		log.Printf("caught sig: %+v", sig)
+		log.Printf("Gracefully shutting down server...")
+		if err := srv.Shutdown(context.Background()); err != nil {
+			log.Printf("Unable to shutdown server: %v", err)
+		} else {
+			log.Printf("Server stopped")
+		}
+	}()
 
 	log.Println("Server running on port 8080")
 	// Bind to a port and pass in the mux router
