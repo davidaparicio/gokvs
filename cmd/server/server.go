@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"sync"
+	"syscall"
 	"time"
 
 	"github.com/davidaparicio/gokvs/internal"
@@ -163,24 +165,51 @@ func main() {
 		//TLSConfig:       tlsConfig,
 	}
 
+	// Improvement possible https://pkg.go.dev/golang.org/x/sync/errgroup
+	// https://www.rudderstack.com/blog/implementing-graceful-shutdown-in-go/
+	var wg sync.WaitGroup
+	wg.Add(1)
+
 	// Check for a closing signal
 	go func() {
-		// Graceful shutdown
+		// Graceful shutdown goroutine
 		sigquit := make(chan os.Signal, 1)
-		signal.Notify(sigquit, os.Interrupt, os.Kill)
+		// os.Kill can't be caught https://groups.google.com/g/golang-nuts/c/t2u-RkKbJdU
+		// POSIX spec: signal can be caught except SIGKILL/SIGSTOP signals
+		// Ctrl-c (usually) sends the SIGINT signal, not SIGKILL
+		// syscall.SIGTERM usual signal for termination
+		// and default one for docker containers, which is also used by kubernetes
+		signal.Notify(sigquit, os.Interrupt, os.Kill, syscall.SIGTERM)
 		sig := <-sigquit
-		log.Printf("caught sig: %+v", sig)
-		log.Printf("Gracefully shutting down server...")
+
+		log.Println() // newline "\r\n" to let the signal alone, like ^C
+		log.Printf("Caught the following signal: %+v", sig)
+
+		log.Printf("Gracefully shutting down server..")
 		if err := srv.Shutdown(context.Background()); err != nil {
 			log.Printf("Unable to shutdown server: %v", err)
 		} else {
 			log.Printf("Server stopped")
 		}
+
+		log.Printf("Gracefully shutting down TransactionLogger...")
+		if err := transact.Close(); err != nil {
+			log.Printf("Unable to close FileTransactionLogger: %v", err)
+		} else {
+			log.Printf("FileTransactionLogger closed")
+		}
+
+		wg.Done()
 	}()
 
 	log.Println("Server running on port 8080")
 	// Bind to a port and pass in the mux router
 	if err := srv.ListenAndServe(); err != nil {
-		log.Fatal(err)
+		if err == http.ErrServerClosed {
+			log.Printf("Server stopping...")
+		} else {
+			log.Fatal(err) //TODO replace Fatal by a graceful shutdown
+		}
 	}
+	wg.Wait() //For the signal/graceful shutdown goroutine
 }
