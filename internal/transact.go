@@ -3,6 +3,7 @@ package internal
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"net/url"
 	"os"
 	"sync"
@@ -124,8 +125,12 @@ func (l *TransactionLogger) ReadEvents() (<-chan Event, <-chan error) {
 			if _, err := fmt.Sscanf(
 				line, "%d\t%d\t%s\t%s",
 				&e.Sequence, &e.EventType, &e.Key, &e.Value); err != nil {
-				outError <- fmt.Errorf("Scanner error, failure in fmt.Sscanf")
-				return
+				// https://github.com/golang/go/issues/16563
+				//log.Printf("Scanner error, failure in fmt.Sscanf: %v", err)
+				if err != io.EOF {
+					outError <- fmt.Errorf("Scanner error, failure in fmt.Sscanf: %v", err)
+					return
+				}
 			}
 
 			// Sanity check ! Are the sequence numbers in increasing order?
