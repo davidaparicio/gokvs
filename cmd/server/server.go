@@ -131,6 +131,8 @@ func initializeTransactionLog() error {
 }
 
 func main() {
+	internal.PrintVersion()
+
 	// Initializes the transaction log and loads existing data, if any.
 	// Blocks until all data is read.
 	err := initializeTransactionLog()

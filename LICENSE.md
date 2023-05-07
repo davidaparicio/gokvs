@@ -156,7 +156,7 @@ d. Nothing in this Public License constitutes or may be interpreted as a limitat
 >
 > Creative Commons may be contacted at [creativecommons.org](http://creativecommons.org).
 
-Software: Tietê
+Software: GoKVs
 Licensor: David Aparicio
 
 https://creativecommons.org/licenses/by-nc/4.0/
