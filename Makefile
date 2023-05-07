@@ -35,6 +35,10 @@ COMMIT      := $(shell git rev-parse HEAD)
 DATE        := $(shell date)## +%Y-%m-%d)
 PKG_LDFLAGS := github.com/davidaparicio/gokvs/internal
 
+GORELEASER_FLAGS ?= --snapshot --clean
+CGO_ENABLED := 0
+export CGO_ENABLED
+
 compile: mod ## Compile for the local architecture ⚙
 	@echo "Compiling..."
 	go build -ldflags "\
