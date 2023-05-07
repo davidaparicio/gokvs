@@ -33,3 +33,12 @@ else
   gosec ./...
   #gosec -no-fail -fmt sarif -out results.sarif ./...
 fi
+
+if ! command -v govulncheck &> /dev/null
+then
+  echo "govulncheck required but it's not installed. Skipping."
+  exit
+else
+  echo "Let's Govulncheck"
+  govulncheck ./...
+fi
