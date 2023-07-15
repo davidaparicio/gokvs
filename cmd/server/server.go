@@ -15,9 +15,12 @@ import (
 
 	"github.com/davidaparicio/gokvs/internal"
 	"github.com/gorilla/mux"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 var transact *internal.TransactionLogger
+var m *internal.Metrics
 
 func loggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -27,10 +30,13 @@ func loggingMiddleware(next http.Handler) http.Handler {
 }
 
 func notAllowedHandler(w http.ResponseWriter, r *http.Request) {
+	m.HttpNotAllowed.Inc()
 	http.Error(w, "Not Allowed", http.StatusMethodNotAllowed)
 }
 
 func keyValuePutHandler(w http.ResponseWriter, r *http.Request) {
+	m.QueriesInflight.Inc()
+	defer m.QueriesInflight.Dec()
 	vars := mux.Vars(r)
 	key := vars["key"]
 
@@ -51,10 +57,13 @@ func keyValuePutHandler(w http.ResponseWriter, r *http.Request) {
 
 	transact.WritePut(key, string(value))
 
+	m.EventsPut.Inc()
 	log.Printf("PUT key=%s value=%s\n", key, string(value))
 }
 
 func keyValueGetHandler(w http.ResponseWriter, r *http.Request) {
+	m.QueriesInflight.Inc()
+	defer m.QueriesInflight.Dec()
 	vars := mux.Vars(r)
 	key := vars["key"]
 
@@ -72,10 +81,13 @@ func keyValueGetHandler(w http.ResponseWriter, r *http.Request) {
 		log.Printf("ERROR in w.Write for GET key=%s\n", key)
 	}
 
+	m.EventsGet.Inc()
 	log.Printf("GET key=%s\n", key)
 }
 
 func keyValueDeleteHandler(w http.ResponseWriter, r *http.Request) {
+	m.QueriesInflight.Inc()
+	defer m.QueriesInflight.Dec()
 	vars := mux.Vars(r)
 	key := vars["key"]
 
@@ -87,6 +99,7 @@ func keyValueDeleteHandler(w http.ResponseWriter, r *http.Request) {
 
 	transact.WriteDelete(key)
 
+	m.EventsDelete.Inc()
 	log.Printf("DELETE key=%s\n", key)
 }
 
@@ -115,14 +128,13 @@ func initializeTransactionLog() error {
 			switch e.EventType {
 			case internal.EventDelete: // Got a DELETE event!
 				err = internal.Delete(e.Key)
-				count++
 			case internal.EventPut: // Got a PUT event!
 				err = internal.Put(e.Key, e.Value)
-				count++
 			}
+			m.EventsReplayed.Inc()
+			count++
 		}
 	}
-
 	log.Printf("%d events replayed\n", count)
 
 	transact.Run()
@@ -132,6 +144,12 @@ func initializeTransactionLog() error {
 
 func main() {
 	internal.PrintVersion()
+
+	// Create a non-global registry.
+	reg := prometheus.NewRegistry()
+
+	// Create new metrics and register them using the custom registry.
+	m = internal.NewMetrics(reg)
 
 	// Initializes the transaction log and loads existing data, if any.
 	// Blocks until all data is read.
@@ -152,6 +170,10 @@ func main() {
 
 	r.HandleFunc("/healthz", checkMuxHandler)
 	r.HandleFunc("/ruok", checkMuxHandler)
+
+	// Expose metrics and custom registry via an HTTP server
+	// using the HandleFor function. "/metrics" is the usual endpoint for that.
+	r.Handle("/metrics", promhttp.HandlerFor(reg, promhttp.HandlerOpts{Registry: reg}))
 
 	r.HandleFunc("/", notAllowedHandler)
 	r.HandleFunc("/v1", notAllowedHandler)
