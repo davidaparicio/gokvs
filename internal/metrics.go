@@ -2,19 +2,28 @@ package internal
 
 import (
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
 type Metrics struct {
-	QueriesInflight prometheus.Gauge
-	EventsReplayed  prometheus.Counter
-	EventsGet       prometheus.Counter
-	EventsPut       prometheus.Counter
-	EventsDelete    prometheus.Counter
-	HttpNotAllowed  prometheus.Counter
+	QueriesInflight          prometheus.Gauge
+	EventsReplayed           prometheus.Counter
+	EventsGet                prometheus.Counter
+	EventsPut                prometheus.Counter
+	EventsDelete             prometheus.Counter
+	HttpNotAllowed           prometheus.Counter
+	RequestsTotal            *prometheus.CounterVec
+	RequestDurationHistogram *prometheus.HistogramVec
+	Info                     *prometheus.GaugeVec
 }
 
 func NewMetrics(reg prometheus.Registerer) *Metrics {
 	m := &Metrics{
+		Info: prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Subsystem: "gokvs",
+			Name:      "info",
+			Help:      "Information about the GoKVs environment",
+		}, []string{"version"}),
 		QueriesInflight: prometheus.NewGauge(prometheus.GaugeOpts{
 			Subsystem: "gokvs",
 			Name:      "queries_inflight",
@@ -45,12 +54,26 @@ func NewMetrics(reg prometheus.Registerer) *Metrics {
 			Name:      "405",
 			Help:      "total Not Allowed HTTP Error",
 		}),
+		RequestsTotal: promauto.NewCounterVec(prometheus.CounterOpts{
+			Subsystem: "http",
+			Name:      "requests_total",
+			Help:      "total HTTP requests processed",
+		}, []string{"code", "method"}),
+		RequestDurationHistogram: promauto.NewHistogramVec(prometheus.HistogramOpts{
+			Subsystem: "http",
+			Name:      "request_duration_seconds",
+			Help:      "Seconds spent serving HTTP requests.",
+			Buckets:   prometheus.DefBuckets,
+		}, []string{"code", "method"}), //[]string{"path"})
 	}
+	reg.MustRegister(m.Info)
 	reg.MustRegister(m.QueriesInflight)
 	reg.MustRegister(m.EventsReplayed)
 	reg.MustRegister(m.EventsGet)
 	reg.MustRegister(m.EventsPut)
 	reg.MustRegister(m.EventsDelete)
 	reg.MustRegister(m.HttpNotAllowed)
+	reg.MustRegister(m.RequestsTotal)
+	reg.MustRegister(m.RequestDurationHistogram)
 	return m
 }

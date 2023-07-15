@@ -16,16 +16,21 @@ import (
 	"github.com/davidaparicio/gokvs/internal"
 	"github.com/gorilla/mux"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 var transact *internal.TransactionLogger
 var m *internal.Metrics
 
-func loggingMiddleware(next http.Handler) http.Handler {
+// prometheusMiddleware implements mux.MiddlewareFunc + loggingMiddleware
+func prometheusLoggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		log.Println(r.Method, r.RequestURI)
+		//route := mux.CurrentRoute(r); path, _ := route.GetPathTemplate()
+		timer := prometheus.NewTimer(m.RequestDurationHistogram.WithLabelValues(r.Method, r.RequestURI))
 		next.ServeHTTP(w, r)
+		timer.ObserveDuration()
 	})
 }
 
@@ -147,9 +152,11 @@ func main() {
 
 	// Create a non-global registry.
 	reg := prometheus.NewRegistry()
-
+	// Keep all the golang default metrics
+	reg.MustRegister(collectors.NewGoCollector())
 	// Create new metrics and register them using the custom registry.
 	m = internal.NewMetrics(reg)
+	m.Info.With(prometheus.Labels{"version": internal.Version}).Set(1)
 
 	// Initializes the transaction log and loads existing data, if any.
 	// Blocks until all data is read.
@@ -161,7 +168,7 @@ func main() {
 	// Create a new mux router
 	r := mux.NewRouter()
 
-	r.Use(loggingMiddleware)
+	r.Use(prometheusLoggingMiddleware)
 
 	// Associate a path with a handler function on the router
 	r.HandleFunc("/v1/{key}", keyValueGetHandler).Methods("GET")
