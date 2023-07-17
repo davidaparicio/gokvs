@@ -21,6 +21,13 @@ Works on my machine - and yours ! Spin up pre-configured, standardized dev envir
 
 [![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#/https://github.com/davidaparicio/gokvs)
 
+## Improvement list
+* UTF-8/espace/all chars acceptation as key or value
+* Implement Continuous Profiling/Go telemetry with [Pyroscope](https://pyroscope.io/)?
+* Use [Jaeger](https://www.jaegertracing.io/), [Coroot](https://coroot.com/docs/coroot-community-edition) for telemetry
+* Use [jub0bs/fcors](https://github.com/jub0bs/fcors) for security improvment
+* Use [Qovery](https://www.qovery.com/blog/qovery-x-gitpod-partnership) / [DevoxxFR2023 workshop](https://gitlab.com/devoxxfr-2023/env-tests/realworld-devoxxfr) to improve the DevX?
+
 ## License
 Licensed under the MIT License, Version 2.0 (the "License"). You may not use this file except in compliance with the License.
 You may obtain a copy of the License [here](https://choosealicense.com/licenses/mit/).
