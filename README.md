@@ -1,5 +1,9 @@
 # Go Key-Value Store
 
+<p align="left">
+<img src="assets/img/GoKVs.jpg" alt="GoKVs logo" title="GoKVs logo" />
+</p>
+
 [![Docs](https://img.shields.io/badge/docs-current-brightgreen.svg)](https://pkg.go.dev/github.com/davidaparicio/gokvs)
 [![Go Report Card](https://goreportcard.com/badge/davidaparicio/gokvs)](https://goreportcard.com/report/davidaparicio/gokvs)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/davidaparicio/gokvs/blob/main/LICENSE.md)
