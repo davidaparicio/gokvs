@@ -11,11 +11,24 @@
 [![Maintenance](https://img.shields.io/maintenance/yes/2023.svg)]()
 [![Twitter](https://img.shields.io/twitter/follow/dadideo.svg?style=social)](https://twitter.com/intent/follow?screen_name=dadideo)
 
-## Overview
+## Table of Contents
+
+- [Introduction](#introduction)
+- [Usage](#usage)
+- [Contribute](#contribute)
+- [Limitations](#limitations)
+- [Improvement list](#improvement-list)
+- [License](#license)
+- [Contact](#contact)
+
+[comment1]: <> (- [Features](#features))
+[comment2]: <> (- [Getting Started](#getting-started)- [Prerequisites](#prerequisites)- [Installation](#installation))
+
+## Introduction
 
 A simple KV from the O'Reilly, Cloud Native Go book (Matthew A. Titmus)
 
-## How to use it
+## Usage
 
 ```/* TODO */```
 
@@ -25,12 +38,16 @@ Works on my machine - and yours ! Spin up pre-configured, standardized dev envir
 
 [![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#/https://github.com/davidaparicio/gokvs)
 
+## Limitations
+* Like in the book, currently: Key/Value only text, without spaces
+
 ## Improvement list
-* UTF-8/espace/all chars acceptation as key or value
+* UTF-8/space/all chars acceptation as key or value
 * Implement Continuous Profiling/Go telemetry with [Pyroscope](https://pyroscope.io/)?
 * Use [Jaeger](https://www.jaegertracing.io/), [Coroot](https://coroot.com/docs/coroot-community-edition) for telemetry
 * Use [jub0bs/fcors](https://github.com/jub0bs/fcors) for security improvment
 * Use [Qovery](https://www.qovery.com/blog/qovery-x-gitpod-partnership) / [DevoxxFR2023 workshop](https://gitlab.com/devoxxfr-2023/env-tests/realworld-devoxxfr) to improve the DevX?
+* Enforce tests with [go-fault](https://github.com/lingrino/go-fault): Fault injection library in Go using standard http middleware
 
 ## License
 Licensed under the MIT License, Version 2.0 (the "License"). You may not use this file except in compliance with the License.
@@ -40,3 +57,7 @@ If needed some help, there are a ["Licenses 101" by FOSSA](https://fossa.com/blo
 of MIT license and a [French conference talk](https://www.youtube.com/watch?v=8WwTe0vLhgc) by [Jean-Michael Legait](https://twitter.com/jmlegait) about licenses.
 
 [Open source management report powered by FOSSA](https://app.fossa.com/reports/03c2cde1-b0ab-40c5-a115-aef795e0646c)
+
+## Contact
+
+If you have any questions or suggestions regarding the project, feel free to reach out to our team in the [GitHub issues](https://github.com/davidaparicio/gokvs/issues).

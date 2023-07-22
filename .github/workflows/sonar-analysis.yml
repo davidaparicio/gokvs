@@ -1,0 +1,28 @@
+name: "Security Scan (sonar)"
+
+# Run workflow each time code is pushed to your repository and on a schedule.
+# The scheduled workflow runs every at 10:13 on Thursday UTC time.
+# https://crontab.guru/#17_15_*_*_5
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    #branches: [ "main" ]
+    types: [opened, synchronize, reopened]
+  schedule:
+    - cron: '17 15 * * 5'
+
+jobs:
+  sonarcloud:
+    name: SonarCloud
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+# https://sonarcloud.io/project/configuration?id=davidaparicio_namecheck&analysisMode=GitHubActions
