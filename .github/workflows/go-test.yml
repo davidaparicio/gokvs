@@ -13,7 +13,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - name: Check out code into the Go module directory
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Download Go
         uses: actions/setup-go@v4
         with:
@@ -46,12 +46,12 @@ jobs:
   #   runs-on: ${{ matrix.os }}
   #   steps:
   #     - name: Checkout Code (previous)
-  #       uses: actions/checkout@v3
+  #       uses: actions/checkout@v4
   #       with:
   #         ref: ${{ github.base_ref }}
   #         path: previous
   #     - name: Checkout Code (new)
-  #       uses: actions/checkout@v3
+  #       uses: actions/checkout@v4
   #       with:
   #         path: new
   #     - name: Set up Go ${{ matrix.go-version }}
