@@ -15,7 +15,7 @@ jobs:
       - name: Check out code into the Go module directory
         uses: actions/checkout@v4
       - name: Download Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
           go-version: ${{ matrix.go }} #'stable'
       - name: Get dependencies
@@ -55,7 +55,7 @@ jobs:
   #       with:
   #         path: new
   #     - name: Set up Go ${{ matrix.go-version }}
-  #       uses: actions/setup-go@v4
+  #       uses: actions/setup-go@v5
   #       with:
   #         go-version: ${{ matrix.go-version }}
   #     - name: Install benchstat
