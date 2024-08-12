@@ -60,7 +60,7 @@ jobs:
       #- name: Set up Syft
       #  run: sudo apt-get install -y syft
       #  run: curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
-      - uses: sigstore/cosign-installer@v3.5.0          # installs cosign
+      - uses: sigstore/cosign-installer@v3.6.0          # installs cosign
       - uses: anchore/sbom-action/download-syft@v0.17.0 # installs syft
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
