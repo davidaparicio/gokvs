@@ -1,0 +1,2 @@
+pre-commit==4.0.1
+#testcontainers==4.8.2

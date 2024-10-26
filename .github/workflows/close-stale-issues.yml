@@ -17,7 +17,7 @@ jobs:
         ancient-issue-message: This issue has not received any attention in 2 years. If you want to keep this issue open, please leave a comment below and auto-close will be canceled.
         stale-issue-message: This issue has not received a response in a while. If you want to keep this issue open, please leave a comment below and auto-close will be canceled.
         stale-pr-message: This PR has not received a response in a while. If you want to keep this issue open, please leave a comment below and auto-close will be canceled.
-        
+
         # These labels are required
         stale-issue-label: closing-soon
         exempt-issue-label: no-autoclose
