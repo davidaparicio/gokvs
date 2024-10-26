@@ -27,6 +27,7 @@ echo "Finally, the security..."
 if ! command -v gosec &> /dev/null
 then
   echo "gosec required but it's not installed. Skipping."
+  # brew install gosec
   exit
 else
   echo "Let's Gosec"
@@ -37,6 +38,7 @@ fi
 if ! command -v govulncheck &> /dev/null
 then
   echo "govulncheck required but it's not installed. Skipping."
+  # go install golang.org/x/vuln/cmd/govulncheck@latest
   exit
 else
   echo "Let's Govulncheck"

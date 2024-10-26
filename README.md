@@ -30,7 +30,57 @@ A simple KV from the O'Reilly, Cloud Native Go book (Matthew A. Titmus)
 
 ## Usage
 
-```/* TODO */```
+```bash
+make help
+```
+
+To have all make commands
+
+```bash
+benchmark                      Run benchmark tests 🚄
+check-editorconfig             Use to check if the codebase follows editorconfig rules
+check-format                   Used by CI to check if code is formatted
+clean                          Clean your artifacts 🧼
+compile                        Compile for the local architecture ⚙
+doc                            Launch the offline Go documentation 📚
+docker                         Docker run 🛠
+dockerbuild                    Docker build 🛠
+dockerfull                     Docker build and run 🛠
+format                         Format the code using gofmt
+fuzz                           Run fuzzing tests 🌀
+goreleaser                     Run goreleaser directly at the pinned version 🛠
+help                           Show help messages for make targets
+install                        Install the program to /usr/bin 🎉
+lint                           Runs the linter
+mod                            Go mod things
+run                            Run the server
+sec                            Go Security checks code for security issues 🔒
+test                           🤓 Run go tests
+```
+
+As an example: 
+
+```bash
+❯ make dockerfull
+docker build -t gokvs .
+[+] Building 5.5s (16/16) FINISHED
+[...]
+docker run -it --rm -p 8008:8080 gokvs
+Server: 	GoKVs - Community
+Version: 	v0.0.1-SNAPSHOT
+Git commit: 	54a8d74ea3cf6fdcadfac10ee4a4f2553d4562f6q
+Built: 		Thu Jan  1 01:00:00 CET 1970
+
+2024/10/26 20:14:31 0 events replayed
+2024/10/26 20:14:31 Server running on port 8080
+^C2024/10/26 20:14:36
+2024/10/26 20:14:36 Caught the following signal: interrupt
+2024/10/26 20:14:36 Gracefully shutting down server..
+2024/10/26 20:14:36 Server stopping...
+2024/10/26 20:14:36 Server stopped
+2024/10/26 20:14:36 Gracefully shutting down TransactionLogger...
+2024/10/26 20:14:36 FileTransactionLogger closed
+```
 
 ### Building and running your application
 

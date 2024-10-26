@@ -28,13 +28,17 @@ org         ?=  davidaparicio
 authorname  ?=  David Aparicio
 authoremail ?=  david.aparicio@free.fr
 license     ?=  MIT
-year        ?=  2023
+year        ?=  2024
 copyright   ?=  Copyright (c) $(year)
 
 COMMIT      := $(shell git rev-parse HEAD)
 DATE        := $(shell date)## +%Y-%m-%d)
-PKG_LDFLAGS := github.com/davidaparicio/gokvs/internal
+IMAGE_NAME  := $(shell basename $(PWD))
+PORTP       := 8008
+PORTT       := 8080
+# https://docs.docker.com/reference/cli/docker/container/run/#publish
 
+PKG_LDFLAGS := github.com/davidaparicio/gokvs/internal
 GORELEASER_FLAGS ?= --snapshot --clean
 CGO_ENABLED := 0
 export CGO_ENABLED
@@ -65,9 +69,20 @@ run: ## Run the server
 # -X 'main.License=$(license)' \
 # -X 'main.Name=$(target)' \
 
-.PHONY: goreleaser
+.PHONY: goreleaser #oldv: 1.18.2 
 goreleaser: ## Run goreleaser directly at the pinned version 🛠
-	go run github.com/goreleaser/goreleaser@v1.18.2 $(GORELEASER_FLAGS)
+	go run github.com/goreleaser/v2@v2.3.2 $(GORELEASER_FLAGS)
+
+.PHONY: dockerbuild
+dockerbuild: ## Docker build 🛠
+	docker build -t $(IMAGE_NAME) .
+
+.PHONY: docker
+docker: ## Docker run 🛠
+	docker run -it --rm -p $(PORTP):$(PORTT) $(IMAGE_NAME)
+
+.PHONY: dockerfull
+dockerfull: dockerbuild docker ## Docker build and run 🛠
 
 .PHONY: mod
 mod: ## Go mod things
