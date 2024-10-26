@@ -8,7 +8,7 @@
 [![Go Report Card](https://goreportcard.com/badge/davidaparicio/gokvs)](https://goreportcard.com/report/davidaparicio/gokvs)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/davidaparicio/gokvs/blob/main/LICENSE.md)
 [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fdavidaparicio%2Fgokvs.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fdavidaparicio%2Fgokvs?ref=badge_shield)
-[![Maintenance](https://img.shields.io/maintenance/yes/2023.svg)]()
+[![Maintenance](https://img.shields.io/maintenance/yes/2024.svg)]()
 [![Twitter](https://img.shields.io/twitter/follow/dadideo.svg?style=social)](https://twitter.com/intent/follow?screen_name=dadideo)
 
 ## Table of Contents
@@ -21,8 +21,8 @@
 - [License](#license)
 - [Contact](#contact)
 
-[comment1]: <> (- [Features](#features))
-[comment2]: <> (- [Getting Started](#getting-started)- [Prerequisites](#prerequisites)- [Installation](#installation))
+<!--[comment1]: <> (- [Features](#features))
+[comment2]: <> (- [Getting Started](#getting-started)- [Prerequisites](#prerequisites)- [Installation](#installation))-->
 
 ## Introduction
 
@@ -31,6 +31,26 @@ A simple KV from the O'Reilly, Cloud Native Go book (Matthew A. Titmus)
 ## Usage
 
 ```/* TODO */```
+
+### Building and running your application
+
+When you're ready, start your application by running:
+`docker compose up --build`.
+
+Your application will be available at http://localhost:8080.
+
+### Deploying your application to the cloud
+
+First, build your image, e.g.: `docker build -t myapp .`.
+If your cloud uses a different CPU architecture than your development
+machine (e.g., you are on a Mac M1 and your cloud provider is amd64),
+you'll want to build the image for that platform, e.g.:
+`docker build --platform=linux/amd64 -t myapp .`.
+
+Then, push it to your registry, e.g. `docker push myregistry.com/myapp`.
+
+Consult Docker's [getting started](https://docs.docker.com/go/get-started-sharing/)
+docs for more detail on building and pushing.
 
 ## Contribute
 
@@ -48,6 +68,9 @@ Works on my machine - and yours ! Spin up pre-configured, standardized dev envir
 * Use [jub0bs/fcors](https://github.com/jub0bs/fcors) for security improvment
 * Use [Qovery](https://www.qovery.com/blog/qovery-x-gitpod-partnership) / [DevoxxFR2023 workshop](https://gitlab.com/devoxxfr-2023/env-tests/realworld-devoxxfr) to improve the DevX?
 * Enforce tests with [go-fault](https://github.com/lingrino/go-fault): Fault injection library in Go using standard http middleware
+
+### References
+* [Docker's Go guide](https://docs.docker.com/language/golang/)
 
 ## License
 Licensed under the MIT License, Version 2.0 (the "License"). You may not use this file except in compliance with the License.
