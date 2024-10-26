@@ -210,7 +210,7 @@ func main() {
 		// Ctrl-c (usually) sends the SIGINT signal, not SIGKILL
 		// syscall.SIGTERM usual signal for termination
 		// and default one for docker containers, which is also used by kubernetes
-		signal.Notify(sigquit, os.Interrupt, os.Kill, syscall.SIGTERM)
+		signal.Notify(sigquit, os.Interrupt, syscall.SIGTERM)
 		sig := <-sigquit
 
 		log.Println() // newline "\r\n" to let the signal alone, like ^C

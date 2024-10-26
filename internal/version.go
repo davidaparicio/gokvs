@@ -11,7 +11,7 @@ var GitCommit = "54a8d74ea3cf6fdcadfac10ee4a4f2553d4562f6q"
 var BuildDate = "Thu Jan  1 01:00:00 CET 1970" // date -r 0 (Mac), date -d @0 (Linux)
 
 func PrintVersion() {
-	fmt.Printf(GetVersion())
+	fmt.Println(GetVersion())
 }
 
 func GetVersion() string {
