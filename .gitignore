@@ -4,6 +4,8 @@ bin/
 dist/
 # Snyk scan code
 .dccache
+# Project evolution
+ztmp
 
 # Created by https://www.toptal.com/developers/gitignore/api/go,goland,visualstudiocode
 # Edit at https://www.toptal.com/developers/gitignore?templates=go,goland,visualstudiocode

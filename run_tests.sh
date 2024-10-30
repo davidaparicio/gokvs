@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-FuzzFUNC="Fuzz" #"FuzzReverse"
+FuzzFUNC="Fuzz" # "FuzzReverse"
 
 if ! command -v golangci-lint  &> /dev/null
 then
@@ -12,6 +12,9 @@ fi
 
 echo "Let's Test"
 go test -v ./... -coverprofile=coverage.out
+## go help testflag: The idiomatic way to disable test caching explicitly
+## is to use -count=1.
+# go test -v ./... -coverprofile=coverage.out -count=1
 
 echo "Let's Test (race detector)"
 go test -race ./...
@@ -21,6 +24,8 @@ echo "Let's Fuzz" #cannot use -fuzz flag with multiple packages
 go test ./internal -fuzz ${FuzzFUNC} -fuzztime 15s
 
 echo "Let's Bench"
+# Hardware bench with https://github.com/criteo/hwbench
+# DB benchmark with https://github.com/doctolib/pg-index-benchmark
 go test -v ./... -run=^$ -bench . -benchmem -benchtime=3s ./
 
 echo "Finally, the security..."
@@ -32,7 +37,7 @@ then
 else
   echo "Let's Gosec"
   gosec ./...
-  #gosec -no-fail -fmt sarif -out results.sarif ./...
+  # gosec -no-fail -fmt sarif -out results.sarif ./...
 fi
 
 if ! command -v govulncheck &> /dev/null
