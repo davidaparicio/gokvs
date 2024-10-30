@@ -20,7 +20,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-var transact *internal.TransactionLogger
+var transact *internal.TransactionLog
 var m *internal.Metrics
 
 // prometheusMiddleware implements mux.MiddlewareFunc + loggingMiddleware

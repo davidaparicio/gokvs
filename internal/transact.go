@@ -24,12 +24,12 @@ type Event struct {
 	Value     string
 }
 
-/*type TransactionLogger interface {
+type TransactionLogger interface {
 	WriteDelete(key string)
 	WritePut(key, value string)
-}*/
+}
 
-type TransactionLogger struct {
+type TransactionLog struct { // implements TransactionLogger
 	events       chan<- Event // Write-only channel for sending events
 	errors       <-chan error
 	lastSequence uint64   // The last used event sequence number
@@ -37,23 +37,23 @@ type TransactionLogger struct {
 	wg           *sync.WaitGroup
 }
 
-func (l *TransactionLogger) WritePut(key, value string) {
+func (l *TransactionLog) WritePut(key, value string) {
 	l.wg.Add(1)
 	l.events <- Event{EventType: EventPut, Key: key, Value: url.QueryEscape(value)}
 }
 
-func (l *TransactionLogger) WriteDelete(key string) {
+func (l *TransactionLog) WriteDelete(key string) {
 	l.wg.Add(1)
 	l.events <- Event{EventType: EventDelete, Key: key}
 }
 
-func (l *TransactionLogger) Err() <-chan error {
+func (l *TransactionLog) Err() <-chan error {
 	return l.errors
 }
 
-func NewTransactionLogger(filename string) (*TransactionLogger, error) {
+func NewTransactionLogger(filename string) (*TransactionLog, error) {
 	var err error
-	var l TransactionLogger = TransactionLogger{wg: &sync.WaitGroup{}}
+	var l TransactionLog = TransactionLog{wg: &sync.WaitGroup{}}
 
 	// Open the transaction log file for reading and writing.
 	// Any writes to this file (created if not exist) will append/no overwrite
@@ -66,7 +66,7 @@ func NewTransactionLogger(filename string) (*TransactionLogger, error) {
 	return &l, nil
 }
 
-func (l *TransactionLogger) Run() {
+func (l *TransactionLog) Run() {
 	events := make(chan Event, 16)
 	l.events = events
 
@@ -94,11 +94,11 @@ func (l *TransactionLogger) Run() {
 	}()
 }
 
-func (l *TransactionLogger) Wait() {
+func (l *TransactionLog) Wait() {
 	l.wg.Wait()
 }
 
-func (l *TransactionLogger) Close() error {
+func (l *TransactionLog) Close() error {
 	l.wg.Wait()
 
 	if l.events != nil {
@@ -108,7 +108,7 @@ func (l *TransactionLogger) Close() error {
 	return l.file.Close()
 }
 
-func (l *TransactionLogger) ReadEvents() (<-chan Event, <-chan error) {
+func (l *TransactionLog) ReadEvents() (<-chan Event, <-chan error) {
 	scanner := bufio.NewScanner(l.file)
 	outEvent := make(chan Event)
 	outError := make(chan error, 1)
@@ -134,6 +134,7 @@ func (l *TransactionLogger) ReadEvents() (<-chan Event, <-chan error) {
 
 			if (err != nil) && (err != io.EOF) {
 				// https://github.com/golang/go/issues/16563
+				// https://go.dev/play/p/3kOqJKusGhz
 				//log.Printf("Scanner error, failure in fmt.Sscanf: %v", err)
 				outError <- fmt.Errorf("input parse error: %w", err)
 				return
