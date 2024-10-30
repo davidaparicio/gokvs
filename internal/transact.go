@@ -3,7 +3,6 @@ package internal
 import (
 	"bufio"
 	"fmt"
-	"io"
 	"net/url"
 	"os"
 	"sync"
@@ -119,18 +118,24 @@ func (l *TransactionLogger) ReadEvents() (<-chan Event, <-chan error) {
 		defer close(outEvent)
 		defer close(outError)
 
+		// Seek to start of file
+		if _, err := l.file.Seek(0, 0); err != nil {
+			outError <- fmt.Errorf("failed to seek to start of file: %w", err)
+			return
+		}
+
 		for scanner.Scan() {
 			line := scanner.Text()
 
-			if _, err := fmt.Sscanf(
+			n, err := fmt.Sscanf(
 				line, "%d\t%d\t%s\t%s",
-				&e.Sequence, &e.EventType, &e.Key, &e.Value); err != nil {
-				// https://github.com/golang/go/issues/16563
+				&e.Sequence, &e.EventType, &e.Key, &e.Value)
+
+			if n < 4 || err != nil {
+				// https://github.com/golang/go/issues/16563 err != io.EOF
 				//log.Printf("Scanner error, failure in fmt.Sscanf: %v", err)
-				if err != io.EOF {
-					outError <- fmt.Errorf("Scanner error, failure in fmt.Sscanf: %v", err)
-					return
-				}
+				outError <- fmt.Errorf("input parse error: %w", err)
+				return
 			}
 
 			// Sanity check ! Are the sequence numbers in increasing order?
@@ -153,6 +158,7 @@ func (l *TransactionLogger) ReadEvents() (<-chan Event, <-chan error) {
 
 		if err := scanner.Err(); err != nil {
 			outError <- fmt.Errorf("transaction log read failure: %w", err)
+			return
 		}
 	}()
 

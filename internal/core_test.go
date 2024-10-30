@@ -81,14 +81,75 @@ func TestDelete(t *testing.T) {
 		t.Error("key/value doesn't exist")
 	}
 
-	err := Delete(key)
-	if err != nil {
+	if err := Delete(key); err != nil {
 		t.Error("Delete returns an error: ", err)
 	}
 
 	_, contains = store.m[key]
 	if contains {
 		t.Error("Delete failed")
+	}
+}
+
+func TestPutAndGet(t *testing.T) {
+	// Clear the store before testing
+	store.Lock()
+	store.m = make(map[string]string)
+	store.Unlock()
+
+	tests := []struct {
+		name    string
+		key     string
+		value   string
+		wantErr bool
+	}{
+		{
+			name:    "basic put and get",
+			key:     "test-key",
+			value:   "test-value",
+			wantErr: false,
+		},
+		{
+			name:    "empty value",
+			key:     "empty",
+			value:   "",
+			wantErr: false,
+		},
+		{
+			name:    "special characters",
+			key:     "special!@#$",
+			value:   "value!@#$",
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Test Put
+			if err := Put(tt.key, tt.value); (err != nil) != tt.wantErr {
+				t.Errorf("Put() error = %v, wantErr %v", err, tt.wantErr)
+			}
+
+			// Test Get
+			got, err := Get(tt.key)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Get() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if got != tt.value {
+				t.Errorf("Get() got = %v, want %v", got, tt.value)
+			}
+		})
+	}
+}
+
+func TestGetNonExistentKey(t *testing.T) {
+	store.Lock()
+	store.m = make(map[string]string)
+	store.Unlock()
+
+	_, err := Get("non-existent-key")
+	if err != ErrorNoSuchKey {
+		t.Errorf("Get() error = %v, want %v", err, ErrorNoSuchKey)
 	}
 }
 
