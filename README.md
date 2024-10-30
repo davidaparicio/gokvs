@@ -108,14 +108,19 @@ Works on my machine - and yours ! Spin up pre-configured, standardized dev envir
 
 [![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#/https://github.com/davidaparicio/gokvs)
 
-## Limitations
-* Like in the book, currently: Key/Value only text, without spaces
+## Features
+* Key/Value only text with spaces
+* UTF-8/space/all chars acceptation as key or value (TODO: need tests)
 
 ## Tests
 * Mutation testing with [avito-tech/go-mutesting](https://github.com/avito-tech/go-mutesting) and [gremlins](https://github.com/go-gremlins/gremlins)
 
+## Consistent error status codes across all operations
+* 400 Bad Request for empty keys
+* 404 Not Found for non-existent keys
+* 500 Internal Server Error for other errors
+
 ## Improvement list
-* UTF-8/space/all chars acceptation as key or value
 * Implement Continuous Profiling/Go telemetry with [Otel](https://opentelemetry.io/docs/languages/go/getting-started/) or [Pyroscope](https://pyroscope.io/)?
 * Use [Jaeger](https://www.jaegertracing.io/), [Coroot](https://coroot.com/docs/coroot-community-edition) for telemetry
 * Use [jub0bs/fcors](https://github.com/jub0bs/fcors) for security improvment

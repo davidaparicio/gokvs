@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -45,10 +46,24 @@ func keyValuePutHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	key := vars["key"]
 
+	// Trim any leading/trailing whitespace from the key
+	key = strings.TrimSpace(key)
+	if key == "" {
+		http.Error(w, "empty key is not allowed", http.StatusBadRequest)
+		return
+	}
+
 	value, err := io.ReadAll(r.Body)
 	defer r.Body.Close()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Convert value to string but preserve whitespace and newlines
+	stringValue := string(value)
+	if len(strings.TrimSpace(stringValue)) == 0 {
+		http.Error(w, "empty value is not allowed", http.StatusBadRequest)
 		return
 	}
 
@@ -71,6 +86,13 @@ func keyValueGetHandler(w http.ResponseWriter, r *http.Request) {
 	defer m.QueriesInflight.Dec()
 	vars := mux.Vars(r)
 	key := vars["key"]
+
+	// Trim any leading/trailing whitespace from the key
+	key = strings.TrimSpace(key)
+	if key == "" {
+		http.Error(w, "empty key is not allowed", http.StatusBadRequest)
+		return
+	}
 
 	value, err := internal.Get(key)
 	if errors.Is(err, internal.ErrorNoSuchKey) {
@@ -96,7 +118,18 @@ func keyValueDeleteHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	key := vars["key"]
 
+	// Trim any leading/trailing whitespace from the key
+	key = strings.TrimSpace(key)
+	if key == "" {
+		http.Error(w, "empty key is not allowed", http.StatusBadRequest)
+		return
+	}
+
 	err := internal.Delete(key)
+	if errors.Is(err, internal.ErrorNoSuchKey) {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
