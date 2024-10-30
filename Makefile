@@ -34,7 +34,7 @@ copyright   ?=  Copyright (c) $(year)
 COMMIT      := $(shell git rev-parse HEAD)
 DATE        := $(shell date)## +%Y-%m-%d)
 IMAGE_NAME  := $(shell basename $(PWD))
-PORTP       := 8008
+PORTP       := 8080
 PORTT       := 8080
 # https://docs.docker.com/reference/cli/docker/container/run/#publish
 
