@@ -3,6 +3,7 @@ package internal
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"net/url"
 	"os"
 	"sync"
@@ -131,10 +132,16 @@ func (l *TransactionLogger) ReadEvents() (<-chan Event, <-chan error) {
 				line, "%d\t%d\t%s\t%s",
 				&e.Sequence, &e.EventType, &e.Key, &e.Value)
 
-			if n < 4 || err != nil {
-				// https://github.com/golang/go/issues/16563 err != io.EOF
+			if (err != nil) && (err != io.EOF) {
+				// https://github.com/golang/go/issues/16563
 				//log.Printf("Scanner error, failure in fmt.Sscanf: %v", err)
 				outError <- fmt.Errorf("input parse error: %w", err)
+				return
+			}
+
+			// Sanity check ! All lines must have 4 fields
+			if err == nil && n < 4 {
+				outError <- fmt.Errorf("input wrong number parsed: %w", err)
 				return
 			}
 
