@@ -116,7 +116,7 @@ Works on my machine - and yours ! Spin up pre-configured, standardized dev envir
 
 ## Improvement list
 * UTF-8/space/all chars acceptation as key or value
-* Implement Continuous Profiling/Go telemetry with [Otel](https://opentelemetry.io/docs/languages/go/getting-started/) or [Pyroscope](https://pyroscope.io/)?
+* Implement Continuous Profiling/Go telemetry with [Otel](https://opentelemetry.io/docs/languages/go/getting-started/) with [global registry](https://austince.github.io/blog/using-otel-with-prometheus-global-registry/) or [Pyroscope](https://pyroscope.io/)?
 * Use [Jaeger](https://www.jaegertracing.io/), [Coroot](https://coroot.com/docs/coroot-community-edition) for telemetry
 * Use [jub0bs/fcors](https://github.com/jub0bs/fcors) for security improvment
 * Use [Qovery](https://www.qovery.com/blog/qovery-x-gitpod-partnership) / [DevoxxFR2023 workshop](https://gitlab.com/devoxxfr-2023/env-tests/realworld-devoxxfr) to improve the DevX?
