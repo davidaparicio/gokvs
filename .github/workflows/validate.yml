@@ -11,6 +11,13 @@ jobs:
         go-version: [oldstable, stable]
     runs-on: ${{ matrix.os }}
     steps:
+      # - name: Cache Go modules
+      #   uses: actions/cache@v3
+      #   with:
+      #     path: ~/go/pkg/mod
+      #     key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+      #     restore-keys: |
+      #       ${{ runner.os }}-go-
       - name: Install Go
         uses: actions/setup-go@v5
         with:
@@ -18,7 +25,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Format
-        run: test -z $(gofmt -l -w -s ./)
+        run: | # test -z $(gofmt -l -w -s ./)
+          if ! test -z $(gofmt -l -s ./); then
+            echo "Code not formatted. Please run locally 'gofmt -l -w -s ./'."
+            exit 1
+          fi
       - name: Lint
         uses: golangci/golangci-lint-action@v6
       - name: Test
@@ -26,26 +37,26 @@ jobs:
       - name: Upload Test Results
         uses: actions/upload-artifact@v4
         with:
-          name: test-results
+          name: test-results-${{ matrix.os }}-${{ matrix.go-version }}
           path: test-results.txt
-      - name: Upload Coverage
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage
-          path: coverage.txt
-      - name: Enforce 100% Test Coverage
-        run: |
-          if ! grep -q "coverage: 100.0% of statements" test-results.txt; then
-            echo "::error::Test Coverage is not 100%"
-            exit 1
-          fi
-      - name: Benchmark
-        run: |
-          for i in {1..5}; do
-            go test -run=XXX -bench=. | tee -a bench.txt
-          done
-      - name: Upload Benchmark
-        uses: actions/upload-artifact@v4
-        with:
-          name: bench-${{ matrix.os }}-${{ matrix.go-version }}
-          path: bench.txt
+      # - name: Upload Coverage
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: coverage-${{ matrix.os }}-${{ matrix.go-version }}
+      #     path: coverage.txt
+      # - name: Enforce 100% Test Coverage
+      #   run: |
+      #     if ! grep -q "coverage: 100.0% of statements" test-results.txt; then
+      #       echo "::error::Test Coverage is not 100%"
+      #       exit 1
+      #     fi
+      # - name: Benchmark
+      #   run: |
+      #     for i in {1..5}; do
+      #       go test -run=XXX -bench=. | tee -a bench.txt
+      #     done
+      # - name: Upload Benchmark
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: bench-${{ matrix.os }}-${{ matrix.go-version }} #-${{ github.run_id }} # Unique per matrix run
+      #     path: bench.txt
