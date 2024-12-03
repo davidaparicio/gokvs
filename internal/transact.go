@@ -57,7 +57,6 @@ func NewTransactionLogger(filename string) (*TransactionLog, error) {
 
 	// Open the transaction log file for reading and writing.
 	// Any writes to this file (created if not exist) will append/no overwrite
-	// #nosec [G304] [-- Acceptable risk, for the CWE-22]
 	l.file, err = os.OpenFile(filename, os.O_RDWR|os.O_APPEND|os.O_CREATE, 0600)
 	if err != nil {
 		return nil, fmt.Errorf("cannot open transaction log file: %w", err)
