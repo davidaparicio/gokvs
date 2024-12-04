@@ -147,3 +147,19 @@ benchmark: ## Run benchmark tests 🚄
 sec: ## Go Security checks code for security issues 🔒
 	gosec ./...
 	govulncheck ./...
+
+.PHONY: hack
+hack: ## Slowloris DDoS attack 🏴‍☠️
+	@echo "DISCLAIMER: these ethical hacking tools are intended for educational purposes and awareness training sessions only. Performing hacking attempts on computers that you do not own (without permission) is illegal! Do not attempt to gain access to device that you do not own."
+	@sleep 10
+	@echo "Running the slowloris attack...\n"
+	@go run -ldflags "\
+	-s -w" \
+	examples/slowloris/main.go
+
+.PHONY: coffee
+coffee: ## Controlling a coffee machine with Makefile ? 
+	@echo "\n           )      (\n           (  )   )\n         _..,-(--,.._\n      .-;'-.,____,.-';\n     (( |            |\n      \`-;            ;\n         \\          /\n      .-''\`-.____.-'''-.\n     (     '------'     )\n      \`--..________..--'\n";
+	@echo "For the v2, please check the"
+	@echo "Wassim Chegham's work (neuronal control)"
+	@echo "https://www.youtube.com/watch?v=bd159jmJfGE"
