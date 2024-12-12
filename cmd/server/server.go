@@ -11,7 +11,6 @@ import (
 	"os/signal"
 	"sync"
 	"syscall"
-	"time"
 
 	"github.com/davidaparicio/gokvs/internal"
 	"github.com/gorilla/mux"
@@ -187,14 +186,19 @@ func main() {
 	r.HandleFunc("/v1/{key}", notAllowedHandler)
 
 	srv := &http.Server{
-		Addr:              ":8080",
-		ReadTimeout:       1 * time.Second,
-		WriteTimeout:      1 * time.Second,
-		IdleTimeout:       30 * time.Second,
-		ReadHeaderTimeout: 2 * time.Second,
-		Handler:           r,
-		//TLSConfig: tlsConfig,
+		Addr:    ":8080",
+		Handler: r,
 	}
+
+	// srv := &http.Server{
+	// 	Addr:              ":8080",
+	// 	ReadTimeout:       1 * time.Second,
+	// 	WriteTimeout:      1 * time.Second,
+	// 	IdleTimeout:       30 * time.Second,
+	// 	ReadHeaderTimeout: 2 * time.Second,
+	// 	Handler:           r,
+	// 	//TLSConfig: tlsConfig,
+	// }
 
 	// Improvement possible https://pkg.go.dev/golang.org/x/sync/errgroup
 	// https://www.rudderstack.com/blog/implementing-graceful-shutdown-in-go/
