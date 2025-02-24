@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 FuzzFUNC="Fuzz" # "FuzzReverse"
+#nix-shell -p gosec govulncheck
 
 if ! command -v golangci-lint  &> /dev/null
 then
@@ -64,6 +65,7 @@ then
 else
   echo "Let's Gosec"
   gosec ./...
+  # golangci-lint run -E gosec --verbose ./...
   # gosec -no-fail -fmt sarif -out results.sarif ./...
 fi
 
