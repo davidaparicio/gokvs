@@ -1,0 +1,47 @@
+flowchart TD
+    A["External Client"]:::external
+    B["HTTP Server (API Layer)"]:::server
+    subgraph "Business Logic Layer"
+        C["Core Key-Value Operations"]:::logic
+        D["Transaction Logger"]:::logic
+        E["Metrics Collector"]:::logic
+        F["Version Manager"]:::logic
+    end
+    subgraph "CI/CD & Deployment"
+        G["GitHub Workflows"]:::cicd
+        H["Makefile"]:::cicd
+        I["Dockerfile"]:::cicd
+        J["compose.yaml"]:::cicd
+    end
+    K["Assets & Documentation"]:::doc
+    L["Example Client Integration"]:::external
+
+    A -->|"HTTPRequest"| B
+    B -->|"BusinessLogicCall"| C
+    C -->|"Logging"| D
+    C -->|"Metrics"| E
+    C -->|"VersionInfo"| F
+
+    G -->|"Automation"| H
+    H -->|"Builds"| I
+    I -->|"Deploys"| B
+    J -->|"ComposeDeployment"| B
+
+    A ---|"UsageExample"| L
+
+    %% Click Events
+    click B "https://github.com/davidaparicio/gokvs/tree/main/cmd/server"
+    click C "https://github.com/davidaparicio/gokvs/tree/main/internal"
+    click G "https://github.com/davidaparicio/gokvs/tree/main/.github/workflows"
+    click H "https://github.com/davidaparicio/gokvs/tree/main/Makefile"
+    click I "https://github.com/davidaparicio/gokvs/tree/main/Dockerfile"
+    click J "https://github.com/davidaparicio/gokvs/blob/main/compose.yaml"
+    click K "https://github.com/davidaparicio/gokvs/tree/main/assets"
+    click L "https://github.com/davidaparicio/gokvs/tree/main/examples/slowloris"
+
+    %% Styles
+    classDef server fill:#FFDDCC,stroke:#333,stroke-width:2px;
+    classDef logic fill:#CCFFCC,stroke:#333,stroke-width:2px;
+    classDef cicd fill:#CCE5FF,stroke:#333,stroke-width:2px;
+    classDef external fill:#FFE6F2,stroke:#333,stroke-width:2px;
+    classDef doc fill:#FFF2CC,stroke:#333,stroke-width:2px;

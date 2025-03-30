@@ -82,6 +82,10 @@ Built: 		Thu Jan  1 01:00:00 CET 1970
 2024/10/26 20:14:36 FileTransactionLogger closed
 ```
 
+### Diagram
+
+<img src="assets/img/gokvs_diagram.jpg" alt="GoKVs diagram" title="GoKVs diagram" />
+
 ### Building and running your application
 
 When you're ready, start your application by running:
