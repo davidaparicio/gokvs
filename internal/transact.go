@@ -53,7 +53,7 @@ func (l *TransactionLog) Err() <-chan error {
 
 func NewTransactionLogger(filename string) (*TransactionLog, error) {
 	var err error
-	var l TransactionLog = TransactionLog{wg: &sync.WaitGroup{}}
+	var l = TransactionLog{wg: &sync.WaitGroup{}}
 
 	// Open the transaction log file for reading and writing.
 	// Any writes to this file (created if not exist) will append/no overwrite

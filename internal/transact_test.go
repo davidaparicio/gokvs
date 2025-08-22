@@ -21,7 +21,11 @@ func TestCreateLogger(t *testing.T) {
 	}
 	filename := tmpfile.Name()
 
-	defer os.Remove(filename)
+	defer func() {
+		if err := os.Remove(filename); err != nil {
+			t.Logf("Failed to remove temporary file %s: %v", filename, err)
+		}
+	}()
 
 	tl, err := NewTransactionLogger(filename)
 
@@ -44,14 +48,22 @@ func TestCreateLogger(t *testing.T) {
 
 func TestWriteAppend(t *testing.T) {
 	const filename = "/tmp/write-append.txt"
-	defer os.Remove(filename)
+	defer func() {
+		if err := os.Remove(filename); err != nil {
+			t.Logf("Failed to remove temporary file %s: %v", filename, err)
+		}
+	}()
 
 	tl, err := NewTransactionLogger(filename)
 	if err != nil {
 		t.Error(err)
 	}
 	tl.Run()
-	defer tl.Close()
+	defer func() {
+		if err := tl.Close(); err != nil {
+			t.Errorf("Failed to close transaction logger: %v", err)
+		}
+	}()
 
 	chev, cherr := tl.ReadEvents()
 	for e := range chev {
@@ -71,7 +83,11 @@ func TestWriteAppend(t *testing.T) {
 		t.Error(err)
 	}
 	tl2.Run()
-	defer tl2.Close()
+	defer func() {
+		if err := tl2.Close(); err != nil {
+			t.Errorf("Failed to close transaction logger tl2: %v", err)
+		}
+	}()
 
 	chev, cherr = tl2.ReadEvents()
 	for e := range chev {
@@ -93,11 +109,19 @@ func TestWriteAppend(t *testing.T) {
 
 func TestWritePut(t *testing.T) {
 	const filename = "/tmp/write-put.txt"
-	defer os.Remove(filename)
+	defer func() {
+		if err := os.Remove(filename); err != nil {
+			t.Logf("Failed to remove temporary file %s: %v", filename, err)
+		}
+	}()
 
 	tl, _ := NewTransactionLogger(filename)
 	tl.Run()
-	defer tl.Close()
+	defer func() {
+		if err := tl.Close(); err != nil {
+			t.Errorf("Failed to close transaction logger: %v", err)
+		}
+	}()
 
 	tl.WritePut("my-key", "my-value")
 	tl.WritePut("my-key", "my-value2")
@@ -107,7 +131,11 @@ func TestWritePut(t *testing.T) {
 
 	tl2, _ := NewTransactionLogger(filename)
 	evin, errin := tl2.ReadEvents()
-	defer tl2.Close()
+	defer func() {
+		if err := tl2.Close(); err != nil {
+			t.Errorf("Failed to close transaction logger tl2: %v", err)
+		}
+	}()
 
 	for e := range evin {
 		t.Log(e)
@@ -129,8 +157,14 @@ func TestTransactionLoggerSimple(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Cannot create temporary file: %v", err)
 	}
-	defer os.Remove(tmpfile.Name())
-	tmpfile.Close()
+	defer func() {
+		if err := os.Remove(tmpfile.Name()); err != nil {
+			t.Logf("Failed to remove temporary file %s: %v", tmpfile.Name(), err)
+		}
+	}()
+	if err := tmpfile.Close(); err != nil {
+		t.Fatalf("Failed to close temporary file: %v", err)
+	}
 
 	// Create new transaction logger
 	logger, err := NewTransactionLogger(tmpfile.Name())
@@ -157,7 +191,11 @@ func TestTransactionLoggerSimple(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create read logger: %v", err)
 	}
-	defer readLogger.Close()
+	defer func() {
+		if err := readLogger.Close(); err != nil {
+			t.Errorf("Failed to close read logger: %v", err)
+		}
+	}()
 
 	// Read events
 	events, errs := readLogger.ReadEvents()
@@ -198,8 +236,14 @@ func TestTransactionLoggerComplete(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Cannot create temporary file: %v", err)
 	}
-	defer os.Remove(tmpfile.Name())
-	tmpfile.Close()
+	defer func() {
+		if err := os.Remove(tmpfile.Name()); err != nil {
+			t.Logf("Failed to remove temporary file %s: %v", tmpfile.Name(), err)
+		}
+	}()
+	if err := tmpfile.Close(); err != nil {
+		t.Fatalf("Failed to close temporary file: %v", err)
+	}
 
 	// Create new transaction logger
 	logger, err := NewTransactionLogger(tmpfile.Name())
@@ -243,7 +287,11 @@ func TestTransactionLoggerComplete(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create read logger: %v", err)
 	}
-	defer readLogger.Close()
+	defer func() {
+		if err := readLogger.Close(); err != nil {
+			t.Errorf("Failed to close read logger: %v", err)
+		}
+	}()
 
 	// Read events back
 	events, errors := readLogger.ReadEvents()
