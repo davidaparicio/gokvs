@@ -1,9 +1,6 @@
 name: Release (Docker)
 
 on:
-  push:
-    tags:
-      - '*'
   workflow_call:
 
 jobs:

@@ -18,39 +18,53 @@ permissions:
 
 jobs:
   # Security Block - runs in parallel
-  security:
-    name: Security Analysis
-    strategy:
-      matrix:
-        workflow: [gosec-analysis, sonar-analysis, codeql-analysis]
-    uses: ./.github/workflows/${{ matrix.workflow }}.yml
+  gosec-security:
+    name: Security Scan (gosec)
+    uses: ./.github/workflows/gosec-analysis.yml
+    secrets: inherit
+
+  sonar-security:
+    name: Security Scan (sonar)
+    uses: ./.github/workflows/sonar-analysis.yml
+    secrets: inherit
+
+  codeql-security:
+    name: Security Scan (codeql)
+    uses: ./.github/workflows/codeql-analysis.yml
     secrets: inherit
 
   # Tests Block - runs after Security completes
-  tests:
-    name: Tests & Linting
-    needs: security
-    strategy:
-      matrix:
-        workflow: [golangci-lint, go-test]
-    uses: ./.github/workflows/${{ matrix.workflow }}.yml
+  golangci-lint:
+    name: Lint (golangci-lint)
+    needs: [gosec-security, sonar-security, codeql-security]
+    uses: ./.github/workflows/golangci-lint.yml
+    secrets: inherit
+
+  go-test:
+    name: Test (Go)
+    needs: [gosec-security, sonar-security, codeql-security]
+    uses: ./.github/workflows/go-test.yml
     secrets: inherit
 
   # Publish Block - runs in parallel after Tests complete, only on tags
-  publish:
-    name: Release & Publish
-    needs: tests
+  goreleaser:
+    name: Release (GoReleaser)
+    needs: [golangci-lint, go-test]
     if: startsWith(github.ref, 'refs/tags/')
-    strategy:
-      matrix:
-        workflow: [goreleaser, docker-releaser]
-    uses: ./.github/workflows/${{ matrix.workflow }}.yml
+    uses: ./.github/workflows/goreleaser.yml
+    secrets: inherit
+
+  docker-release:
+    name: Release (Docker)
+    needs: [golangci-lint, go-test]
+    if: startsWith(github.ref, 'refs/tags/')
+    uses: ./.github/workflows/docker-releaser.yml
     secrets: inherit
 
   # Benchstat Block - runs at the very end
   benchmarks:
     name: Performance Benchmarks
-    needs: [publish]
-    if: always() && (needs.publish.result == 'success' || needs.publish.result == 'skipped')
+    needs: [goreleaser, docker-release]
+    if: always() && (needs.goreleaser.result == 'success' || needs.goreleaser.result == 'skipped') && (needs.docker-release.result == 'success' || needs.docker-release.result == 'skipped')
     uses: ./.github/workflows/benchstat.yml
     secrets: inherit

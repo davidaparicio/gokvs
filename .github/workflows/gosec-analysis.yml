@@ -4,10 +4,6 @@ name: "Security Scan (gosec)"
 # The scheduled workflow runs every at 10:13 on Thursday UTC time.
 # https://crontab.guru/#13_10_*_*_4
 on:
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
   schedule:
     - cron: '13 10 * * 4'
   workflow_call:
