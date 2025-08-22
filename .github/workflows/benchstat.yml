@@ -4,7 +4,10 @@
 
 name: Benchstat
 
-on: [push, pull_request]
+on: 
+  push:
+  pull_request:
+  workflow_call:
 
 jobs:
   incoming:

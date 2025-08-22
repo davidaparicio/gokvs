@@ -11,6 +11,7 @@ on:
     types: [opened, synchronize, reopened]
   schedule:
     - cron: '17 15 * * 5'
+  workflow_call:
 
 jobs:
   sonarcloud:

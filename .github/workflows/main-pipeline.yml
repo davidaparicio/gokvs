@@ -1,0 +1,56 @@
+name: Main CI/CD Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+    tags: [ "*" ]
+  pull_request:
+    branches: [ "main" ]
+
+permissions:
+  contents: write
+  packages: write
+  deployments: write
+  id-token: write
+  actions: read
+  security-events: write
+  pull-requests: read
+
+jobs:
+  # Security Block - runs in parallel
+  security:
+    name: Security Analysis
+    strategy:
+      matrix:
+        workflow: [gosec-analysis, sonar-analysis, codeql-analysis]
+    uses: ./.github/workflows/${{ matrix.workflow }}.yml
+    secrets: inherit
+
+  # Tests Block - runs after Security completes
+  tests:
+    name: Tests & Linting
+    needs: security
+    strategy:
+      matrix:
+        workflow: [golangci-lint, go-test]
+    uses: ./.github/workflows/${{ matrix.workflow }}.yml
+    secrets: inherit
+
+  # Publish Block - runs in parallel after Tests complete, only on tags
+  publish:
+    name: Release & Publish
+    needs: tests
+    if: startsWith(github.ref, 'refs/tags/')
+    strategy:
+      matrix:
+        workflow: [goreleaser, docker-releaser]
+    uses: ./.github/workflows/${{ matrix.workflow }}.yml
+    secrets: inherit
+
+  # Benchstat Block - runs at the very end
+  benchmarks:
+    name: Performance Benchmarks
+    needs: [publish]
+    if: always() && (needs.publish.result == 'success' || needs.publish.result == 'skipped')
+    uses: ./.github/workflows/benchstat.yml
+    secrets: inherit
