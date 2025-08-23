@@ -20,7 +20,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-var transact *internal.TransactionLog
+var transact internal.TransactionLogger
 var m *internal.Metrics
 
 // prometheusMiddleware implements mux.MiddlewareFunc + loggingMiddleware
@@ -121,7 +121,15 @@ func checkMuxHandler(w http.ResponseWriter, r *http.Request) {
 func initializeTransactionLog() error {
 	var err error
 
-	transact, err = internal.NewTransactionLogger("/tmp/transactions.log")
+	// Configure SQLite transaction logger with automatic migration
+	config := internal.LoggerConfig{
+		Type:            "sqlite",
+		FilePath:        "/tmp/transactions.log", // Original file path for migration
+		DBPath:          "/tmp/transactions.db",  // SQLite database path
+		MigrateFromFile: true,                      // Enable automatic migration
+	}
+
+	transact, err = internal.NewTransactionLoggerWithConfig(config)
 	if err != nil {
 		return fmt.Errorf("failed to create transaction logger: %w", err)
 	}
@@ -229,9 +237,9 @@ func main() {
 
 		log.Printf("Gracefully shutting down TransactionLogger...")
 		if err := transact.Close(); err != nil {
-			log.Printf("Unable to close FileTransactionLogger: %v", err)
+			log.Printf("Unable to close TransactionLogger: %v", err)
 		} else {
-			log.Printf("FileTransactionLogger closed")
+			log.Printf("TransactionLogger closed")
 		}
 
 		wg.Done()

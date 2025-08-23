@@ -50,7 +50,7 @@ compile: mod ## Compile for the local architecture ⚙
 	-X '${PKG_LDFLAGS}.Version=$(version)' \
 	-X '${PKG_LDFLAGS}.BuildDate=$(DATE)' \
 	-X '${PKG_LDFLAGS}.Revision=$(COMMIT)'" \
-	-o bin/$(target) .
+	-o bin/$(target) ./cmd/server
 
 .PHONY: run
 run: ## Run the server
@@ -98,6 +98,89 @@ install: compile test ## Install the program to /usr/bin 🎉
 test: compile ## 🤓 Run go tests
 	@echo "Testing..."
 	go test -v ./...
+
+.PHONY: test-unit
+test-unit: compile ## 🔬 Run unit tests only
+	@echo "Running unit tests..."
+	go test -v ./internal ./cmd/server -run "^Test[^I][^n][^t]"
+
+.PHONY: test-integration
+test-integration: compile ## 🔗 Run integration tests only
+	@echo "Running integration tests..."
+	go test -v ./test/integration
+
+.PHONY: test-e2e
+test-e2e: compile ## 🎯 Run end-to-end tests only
+	@echo "Running end-to-end tests..."
+	go test -v ./test/e2e
+
+.PHONY: test-all
+test-all: test-unit test-integration test-e2e ## 🎆 Run complete test suite
+	@echo "All tests completed!"
+
+.PHONY: test-coverage
+test-coverage: compile ## 📈 Run tests with coverage report
+	@echo "Running tests with coverage..."
+	go test -coverprofile=coverage.out ./...
+	go tool cover -html=coverage.out -o coverage.html
+	@echo "Coverage report generated: coverage.html"
+
+.PHONY: test-coverage-summary
+test-coverage-summary: compile ## 📊 Show coverage summary
+	@echo "Generating coverage summary..."
+	go test -coverprofile=coverage.out ./...
+	go tool cover -func=coverage.out
+
+.PHONY: test-race
+test-race: compile ## 🏃 Run tests with race detection
+	@echo "Running tests with race detection..."
+	go test -race -v ./...
+
+.PHONY: test-short
+test-short: compile ## ⚡ Run tests in short mode (skip slow tests)
+	@echo "Running tests in short mode..."
+	go test -short -v ./...
+
+.PHONY: test-verbose
+test-verbose: compile ## 🔊 Run tests with maximum verbosity
+	@echo "Running tests with verbose output..."
+	go test -v -count=1 ./...
+
+.PHONY: test-concurrent
+test-concurrent: compile ## 🔄 Run tests focusing on concurrency
+	@echo "Running concurrency tests..."
+	go test -v -run "Concurrent|Race|Thread" ./...
+
+.PHONY: test-performance
+test-performance: compile ## 🚀 Run performance and benchmark tests
+	@echo "Running performance tests..."
+	go test -v -run "Performance|Load|Benchmark" ./...
+	go test -bench=. -benchmem ./...
+
+.PHONY: test-stress
+test-stress: compile ## 💪 Run stress tests with high load
+	@echo "Running stress tests..."
+	go test -v -count=10 -run "TestConcurrent" ./...
+
+.PHONY: test-clean
+test-clean: ## 🧩 Clean test artifacts and temporary files
+	@echo "Cleaning test artifacts..."
+	rm -f coverage.out coverage.html
+	rm -f /tmp/test-*.log
+	rm -f /tmp/*-transactions.log
+	rm -f /tmp/*-transactions.db
+
+.PHONY: test-watch
+test-watch: ## 👀 Watch for changes and run tests automatically
+	@echo "Watching for changes..."
+	@which fswatch > /dev/null || (echo "fswatch not found. Install with: brew install fswatch" && exit 1)
+	fswatch -o . | xargs -n1 -I{} make test-unit
+
+.PHONY: test-mutation
+test-mutation: ## 🧬 Run mutation testing (requires go-mutesting)
+	@echo "Running mutation testing..."
+	@which go-mutesting > /dev/null || (echo "Installing go-mutesting..." && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest)
+	go-mutesting ./...
 
 .PHONY: clean
 clean: ## Clean your artifacts 🧼

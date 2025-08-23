@@ -62,12 +62,40 @@ jobs:
         uses: actions/download-artifact@v5
         with:
           name: bench-incoming
+          path: bench-incoming
       - name: Download Current
         uses: actions/download-artifact@v5
         with:
           name: bench-current
+          path: bench-current
+      - name: Debug Directory Structure
+        run: |
+          echo "=== Directory Structure ==="
+          find . -name "*.txt" -type f
+          echo "=== Current Directory Contents ==="
+          ls -la bench-current/ bench-incoming/
+      - name: Validate Files Exist
+        run: |
+          if [ ! -f "bench-current/bench.txt" ]; then
+            echo "ERROR: bench-current/bench.txt not found"
+            exit 1
+          fi
+          if [ ! -f "bench-incoming/bench.txt" ]; then
+            echo "ERROR: bench-incoming/bench.txt not found"
+            exit 1
+          fi
+          echo "All benchmark files found successfully"
       - name: Benchstat Results
-        run: benchstat bench-current/bench.txt bench-incoming/bench.txt | tee -a benchstat.txt
+        run: |
+          if benchstat bench-current/bench.txt bench-incoming/bench.txt > benchstat.txt; then
+            echo "Benchstat comparison completed successfully"
+            cat benchstat.txt
+          else
+            echo "Benchstat comparison failed"
+            echo "Current directory structure:"
+            find . -name "*.txt" -type f
+            exit 1
+          fi
       - name: Upload benchstat results
         uses: actions/upload-artifact@v4
         with:
