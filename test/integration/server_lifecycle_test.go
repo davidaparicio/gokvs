@@ -23,7 +23,7 @@ func TestServerStartupShutdown(t *testing.T) {
 	req := helpers.CreateRequest(t, "GET", "/healthz", "")
 	resp := httptest.NewRecorder()
 	server.ServeHTTP(resp, req)
-	
+
 	assert.Equal(t, http.StatusOK, resp.Code)
 	assert.Equal(t, "imok\n", resp.Body.String())
 
@@ -31,7 +31,7 @@ func TestServerStartupShutdown(t *testing.T) {
 	req = helpers.CreateRequest(t, "GET", "/metrics", "")
 	resp = httptest.NewRecorder()
 	server.ServeHTTP(resp, req)
-	
+
 	assert.Equal(t, http.StatusOK, resp.Code)
 	assert.Contains(t, resp.Body.String(), "gokvs_info")
 }
@@ -54,7 +54,7 @@ func TestServerHealthChecks(t *testing.T) {
 			req := helpers.CreateRequest(t, endpoint.method, endpoint.endpoint, "")
 			resp := httptest.NewRecorder()
 			server.ServeHTTP(resp, req)
-			
+
 			assert.Equal(t, http.StatusOK, resp.Code)
 			assert.Equal(t, "imok\n", resp.Body.String())
 		})
@@ -77,26 +77,26 @@ func TestServerConcurrentStartupOperations(t *testing.T) {
 		wg.Add(1)
 		go func(workerID int) {
 			defer wg.Done()
-			
+
 			for j := 0; j < opsPerWorker; j++ {
 				key := fmt.Sprintf("startup-key-%d-%d", workerID, j)
 				value := fmt.Sprintf("startup-value-%d-%d", workerID, j)
-				
+
 				// PUT operation
 				req := helpers.CreateRequest(t, "PUT", fmt.Sprintf("/v1/%s", key), value)
 				resp := httptest.NewRecorder()
 				server.ServeHTTP(resp, req)
-				
+
 				if resp.Code != http.StatusCreated {
 					errorChan <- fmt.Errorf("Worker %d: PUT failed with status %d", workerID, resp.Code)
 					return
 				}
-				
+
 				// GET operation to verify
 				req = helpers.CreateRequest(t, "GET", fmt.Sprintf("/v1/%s", key), "")
 				resp = httptest.NewRecorder()
 				server.ServeHTTP(resp, req)
-				
+
 				if resp.Code != http.StatusOK {
 					errorChan <- fmt.Errorf("Worker %d: GET failed with status %d", workerID, resp.Code)
 					return
@@ -118,21 +118,21 @@ func TestServerConcurrentStartupOperations(t *testing.T) {
 func TestServerDataPersistence(t *testing.T) {
 	// First server instance
 	server1, cleanup1 := helpers.CreateTestServerWithMetrics(t)
-	
+
 	// Store some data
 	testData := map[string]string{
 		"persist-key-1": "persist-value-1",
-		"persist-key-2": "persist-value-2", 
+		"persist-key-2": "persist-value-2",
 		"persist-key-3": "persist-value-3",
 	}
-	
+
 	for key, value := range testData {
 		req := helpers.CreateRequest(t, "PUT", fmt.Sprintf("/v1/%s", key), value)
 		resp := httptest.NewRecorder()
 		server1.ServeHTTP(resp, req)
 		assert.Equal(t, http.StatusCreated, resp.Code)
 	}
-	
+
 	// Verify data is stored
 	for key, expectedValue := range testData {
 		req := helpers.CreateRequest(t, "GET", fmt.Sprintf("/v1/%s", key), "")
@@ -141,13 +141,13 @@ func TestServerDataPersistence(t *testing.T) {
 		assert.Equal(t, http.StatusOK, resp.Code)
 		assert.Equal(t, expectedValue, resp.Body.String())
 	}
-	
+
 	cleanup1() // Simulate server shutdown
-	
+
 	// Second server instance (simulating restart)
 	server2, cleanup2 := helpers.CreateTestServerWithMetrics(t)
 	defer cleanup2()
-	
+
 	// Verify data persistence after restart
 	// Note: In a real server, this would work because the transaction log
 	// would replay the events. In our test environment, we're using separate
@@ -156,7 +156,7 @@ func TestServerDataPersistence(t *testing.T) {
 	req := helpers.CreateRequest(t, "GET", "/metrics", "")
 	resp := httptest.NewRecorder()
 	server2.ServeHTTP(resp, req)
-	
+
 	assert.Equal(t, http.StatusOK, resp.Code)
 	metricsBody := resp.Body.String()
 	assert.Contains(t, metricsBody, "gokvs_events_replayed")
@@ -172,8 +172,8 @@ func TestServerLoadDuringLifecycle(t *testing.T) {
 	defer cleanup()
 
 	const (
-		numPhases = 3
-		numWorkers = 20
+		numPhases   = 3
+		numWorkers  = 20
 		opsPerPhase = 50
 	)
 
@@ -181,41 +181,41 @@ func TestServerLoadDuringLifecycle(t *testing.T) {
 		t.Run(fmt.Sprintf("Phase_%d", phase), func(t *testing.T) {
 			var wg sync.WaitGroup
 			errorChan := make(chan error, numWorkers*opsPerPhase)
-			
+
 			// Get initial metrics
 			initialReq := helpers.CreateRequest(t, "GET", "/metrics", "")
 			initialResp := httptest.NewRecorder()
 			server.ServeHTTP(initialResp, initialReq)
 			require.Equal(t, http.StatusOK, initialResp.Code)
-			
+
 			startTime := time.Now()
-			
+
 			// Launch workers for this phase
 			for i := 0; i < numWorkers; i++ {
 				wg.Add(1)
 				go func(workerID int) {
 					defer wg.Done()
-					
+
 					for j := 0; j < opsPerPhase; j++ {
 						key := fmt.Sprintf("phase-%d-worker-%d-op-%d", phase, workerID, j)
 						value := fmt.Sprintf("value-%d-%d-%d", phase, workerID, j)
-						
+
 						// PUT operation
 						req := helpers.CreateRequest(t, "PUT", fmt.Sprintf("/v1/%s", key), value)
 						resp := httptest.NewRecorder()
 						server.ServeHTTP(resp, req)
-						
+
 						if resp.Code != http.StatusCreated {
 							errorChan <- fmt.Errorf("Phase %d Worker %d: PUT failed with status %d", phase, workerID, resp.Code)
 							return
 						}
-						
+
 						// Occasional health check
 						if j%10 == 0 {
 							healthReq := helpers.CreateRequest(t, "GET", "/healthz", "")
 							healthResp := httptest.NewRecorder()
 							server.ServeHTTP(healthResp, healthReq)
-							
+
 							if healthResp.Code != http.StatusOK {
 								errorChan <- fmt.Errorf("Phase %d Worker %d: Health check failed with status %d", phase, workerID, healthResp.Code)
 								return
@@ -224,23 +224,23 @@ func TestServerLoadDuringLifecycle(t *testing.T) {
 					}
 				}(i)
 			}
-			
+
 			wg.Wait()
 			duration := time.Since(startTime)
-			
+
 			close(errorChan)
-			
+
 			// Check for errors
 			for err := range errorChan {
 				t.Error(err)
 			}
-			
+
 			// Verify server still responds
 			finalReq := helpers.CreateRequest(t, "GET", "/metrics", "")
 			finalResp := httptest.NewRecorder()
 			server.ServeHTTP(finalResp, finalReq)
 			assert.Equal(t, http.StatusOK, finalResp.Code)
-			
+
 			totalOps := numWorkers * opsPerPhase
 			rps := float64(totalOps) / duration.Seconds()
 			t.Logf("Phase %d: Processed %d operations in %v (%.2f ops/sec)", phase, totalOps, duration, rps)
@@ -256,19 +256,19 @@ func TestServerTimeouts(t *testing.T) {
 	// Test that server handles normal operations within timeout
 	req := helpers.CreateRequest(t, "PUT", "/v1/timeout-test", "test-value")
 	resp := httptest.NewRecorder()
-	
+
 	start := time.Now()
 	server.ServeHTTP(resp, req)
 	duration := time.Since(start)
-	
+
 	assert.Equal(t, http.StatusCreated, resp.Code)
 	assert.Less(t, duration, time.Second, "Operation should complete quickly")
-	
+
 	// Verify the data was stored
 	req = helpers.CreateRequest(t, "GET", "/v1/timeout-test", "")
 	resp = httptest.NewRecorder()
 	server.ServeHTTP(resp, req)
-	
+
 	assert.Equal(t, http.StatusOK, resp.Code)
 	assert.Equal(t, "test-value", resp.Body.String())
 }
@@ -285,30 +285,30 @@ func TestServerMetricsAvailabilityDuringLifecycle(t *testing.T) {
 		resp := httptest.NewRecorder()
 		server.ServeHTTP(resp, req)
 		assert.Equal(t, http.StatusOK, resp.Code)
-		
+
 		req = helpers.CreateRequest(t, "GET", "/metrics", "")
 		resp = httptest.NewRecorder()
 		server.ServeHTTP(resp, req)
-		
+
 		assert.Equal(t, http.StatusOK, resp.Code, "Metrics should be available during %s", phase)
-		
+
 		body := resp.Body.String()
 		expectedMetrics := []string{
 			"gokvs_info",
-			"gokvs_queries_inflight", 
+			"gokvs_queries_inflight",
 			"gokvs_events_replayed",
 			"http_requests_total",
 			"go_memstats",
 		}
-		
+
 		for _, metric := range expectedMetrics {
 			assert.Contains(t, body, metric, "Metric %s should be present during %s", metric, phase)
 		}
 	}
-	
+
 	// Check metrics immediately after startup
 	checkMetrics("startup")
-	
+
 	// Perform some operations
 	for i := 0; i < 5; i++ {
 		req := helpers.CreateRequest(t, "PUT", fmt.Sprintf("/v1/metrics-test-%d", i), fmt.Sprintf("value-%d", i))
@@ -316,17 +316,17 @@ func TestServerMetricsAvailabilityDuringLifecycle(t *testing.T) {
 		server.ServeHTTP(resp, req)
 		assert.Equal(t, http.StatusCreated, resp.Code)
 	}
-	
+
 	// Check metrics during operation
 	checkMetrics("operation")
-	
+
 	// Simulate some load
 	for i := 0; i < 10; i++ {
 		req := helpers.CreateRequest(t, "GET", fmt.Sprintf("/v1/metrics-test-%d", i%5), "")
 		resp := httptest.NewRecorder()
 		server.ServeHTTP(resp, req)
 	}
-	
+
 	// Check metrics after load
 	checkMetrics("post-load")
 }
@@ -356,21 +356,21 @@ func TestServerErrorRecovery(t *testing.T) {
 			req := helpers.CreateRequest(t, errorCondition.method, errorCondition.path, errorCondition.body)
 			resp := httptest.NewRecorder()
 			server.ServeHTTP(resp, req)
-			
+
 			assert.Equal(t, errorCondition.expectedStatus, resp.Code)
-			
+
 			// Verify server is still responsive after error
 			healthReq := helpers.CreateRequest(t, "GET", "/healthz", "")
 			healthResp := httptest.NewRecorder()
 			server.ServeHTTP(healthResp, healthReq)
-			
+
 			assert.Equal(t, http.StatusOK, healthResp.Code, "Server should remain responsive after error condition: %s", errorCondition.name)
-			
+
 			// Verify normal operations still work
 			normalReq := helpers.CreateRequest(t, "PUT", "/v1/recovery-test", "recovery-value")
 			normalResp := httptest.NewRecorder()
 			server.ServeHTTP(normalResp, normalReq)
-			
+
 			assert.Equal(t, http.StatusCreated, normalResp.Code, "Normal operations should work after error condition: %s", errorCondition.name)
 		})
 	}
@@ -380,36 +380,36 @@ func TestServerErrorRecovery(t *testing.T) {
 func TestServerResourceCleanup(t *testing.T) {
 	// Track resources before test
 	initialGoroutines := countGoroutines(t)
-	
+
 	// Create and cleanup multiple server instances
 	for i := 0; i < 3; i++ {
 		t.Run(fmt.Sprintf("Instance_%d", i), func(t *testing.T) {
 			server, cleanup := helpers.CreateTestServerWithMetrics(t)
-			
+
 			// Perform some operations
 			req := helpers.CreateRequest(t, "PUT", fmt.Sprintf("/v1/cleanup-test-%d", i), fmt.Sprintf("cleanup-value-%d", i))
 			resp := httptest.NewRecorder()
 			server.ServeHTTP(resp, req)
 			assert.Equal(t, http.StatusCreated, resp.Code)
-			
+
 			// Verify server works
 			req = helpers.CreateRequest(t, "GET", "/healthz", "")
 			resp = httptest.NewRecorder()
 			server.ServeHTTP(resp, req)
 			assert.Equal(t, http.StatusOK, resp.Code)
-			
+
 			// Cleanup
 			cleanup()
 		})
 	}
-	
+
 	// Allow some time for cleanup to complete
 	time.Sleep(100 * time.Millisecond)
-	
+
 	// Verify no significant goroutine leaks
 	finalGoroutines := countGoroutines(t)
 	goroutineDiff := finalGoroutines - initialGoroutines
-	
+
 	// Allow for some variance in goroutine count
 	assert.LessOrEqual(t, goroutineDiff, 5, "Should not have significant goroutine leaks")
 }
@@ -441,10 +441,10 @@ func TestServerConfigurationValidation(t *testing.T) {
 			} else {
 				req = helpers.CreateRequest(t, endpoint.method, endpoint.path, "")
 			}
-			
+
 			resp := httptest.NewRecorder()
 			server.ServeHTTP(resp, req)
-			
+
 			// Should not return 404 (endpoint should exist)
 			assert.NotEqual(t, http.StatusNotFound, resp.Code, "Endpoint %s %s should exist", endpoint.method, endpoint.path)
 		})
@@ -467,33 +467,33 @@ func TestServerProcessLifecycle(t *testing.T) {
 
 	// This test would be used for testing actual server binary lifecycle
 	// For now, we'll test the conceptual lifecycle using our test infrastructure
-	
+
 	// Test multiple server lifecycle iterations
 	for i := 0; i < 3; i++ {
 		t.Run(fmt.Sprintf("Lifecycle_Iteration_%d", i), func(t *testing.T) {
 			server, cleanup := helpers.CreateTestServerWithMetrics(t)
-			
+
 			// Startup verification
 			req := helpers.CreateRequest(t, "GET", "/healthz", "")
 			resp := httptest.NewRecorder()
 			server.ServeHTTP(resp, req)
 			assert.Equal(t, http.StatusOK, resp.Code, "Server should be healthy after startup")
-			
+
 			// Operation verification
 			key := fmt.Sprintf("lifecycle-test-%d", i)
 			value := fmt.Sprintf("lifecycle-value-%d", i)
-			
+
 			req = helpers.CreateRequest(t, "PUT", fmt.Sprintf("/v1/%s", key), value)
 			resp = httptest.NewRecorder()
 			server.ServeHTTP(resp, req)
 			assert.Equal(t, http.StatusCreated, resp.Code, "PUT operation should work")
-			
+
 			req = helpers.CreateRequest(t, "GET", fmt.Sprintf("/v1/%s", key), "")
 			resp = httptest.NewRecorder()
 			server.ServeHTTP(resp, req)
 			assert.Equal(t, http.StatusOK, resp.Code, "GET operation should work")
 			assert.Equal(t, value, resp.Body.String(), "Value should be retrievable")
-			
+
 			// Shutdown verification (cleanup)
 			cleanup()
 			// In a real server, we would verify graceful shutdown here

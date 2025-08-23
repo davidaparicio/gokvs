@@ -186,8 +186,8 @@ type SQLiteTransactionLogger struct {
 	db           *sql.DB
 	events       chan<- Event // Write-only channel for sending events
 	errors       <-chan error
-	lastSequence uint64   // The last used event sequence number
-	dbPath       string   // Path to the SQLite database file
+	lastSequence uint64 // The last used event sequence number
+	dbPath       string // Path to the SQLite database file
 	wg           *sync.WaitGroup
 }
 

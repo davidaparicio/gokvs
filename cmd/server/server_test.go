@@ -157,52 +157,52 @@ func TestRequestValidation(t *testing.T) {
 	router := setupRouter()
 
 	tests := []struct {
-		name          string
-		method        string
-		key           string
-		value         string
-		expectedCode  int
-		description   string
+		name         string
+		method       string
+		key          string
+		value        string
+		expectedCode int
+		description  string
 	}{
 		{
-			name:          "Very long key",
-			method:        "PUT",
-			key:           strings.Repeat("k", 10000),
-			value:         "test-value",
-			expectedCode:  http.StatusCreated,
-			description:   "Very long key should be accepted",
+			name:         "Very long key",
+			method:       "PUT",
+			key:          strings.Repeat("k", 10000),
+			value:        "test-value",
+			expectedCode: http.StatusCreated,
+			description:  "Very long key should be accepted",
 		},
 		{
-			name:          "Special characters in key",
-			method:        "PUT",
-			key:           "key_with-special.chars_123",
-			value:         "test-value",
-			expectedCode:  http.StatusCreated,
-			description:   "URL-safe special characters in key should be accepted",
+			name:         "Special characters in key",
+			method:       "PUT",
+			key:          "key_with-special.chars_123",
+			value:        "test-value",
+			expectedCode: http.StatusCreated,
+			description:  "URL-safe special characters in key should be accepted",
 		},
 		{
-			name:          "UTF-8 key",
-			method:        "PUT",
-			key:           "测试键",
-			value:         "测试值",
-			expectedCode:  http.StatusCreated,
-			description:   "UTF-8 characters should be accepted",
+			name:         "UTF-8 key",
+			method:       "PUT",
+			key:          "测试键",
+			value:        "测试值",
+			expectedCode: http.StatusCreated,
+			description:  "UTF-8 characters should be accepted",
 		},
 		{
-			name:          "Empty value",
-			method:        "PUT",
-			key:           "empty-value-key",
-			value:         "",
-			expectedCode:  http.StatusCreated,
-			description:   "Empty value should be accepted",
+			name:         "Empty value",
+			method:       "PUT",
+			key:          "empty-value-key",
+			value:        "",
+			expectedCode: http.StatusCreated,
+			description:  "Empty value should be accepted",
 		},
 		{
-			name:          "Binary data in value",
-			method:        "PUT",
-			key:           "binary-key",
-			value:         "\x00\x01\x02\x03\xFF",
-			expectedCode:  http.StatusCreated,
-			description:   "Binary data should be accepted",
+			name:         "Binary data in value",
+			method:       "PUT",
+			key:          "binary-key",
+			value:        "\x00\x01\x02\x03\xFF",
+			expectedCode: http.StatusCreated,
+			description:  "Binary data should be accepted",
 		},
 	}
 

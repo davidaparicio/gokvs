@@ -138,7 +138,7 @@ func (a *Assertions) ErrorContains(err error, expectedMsg string, msgAndArgs ...
 		a.t.Error(msg)
 		return
 	}
-	
+
 	if !strings.Contains(err.Error(), expectedMsg) {
 		msg := fmt.Sprintf("Expected error to contain %q, got %q", expectedMsg, err.Error())
 		if len(msgAndArgs) > 0 {
@@ -187,7 +187,7 @@ func (a *Assertions) WithinDuration(expected, actual time.Time, delta time.Durat
 	if diff < 0 {
 		diff = -diff
 	}
-	
+
 	if diff > delta {
 		msg := fmt.Sprintf("Expected time difference to be within %v, got %v", delta, diff)
 		if len(msgAndArgs) > 0 {
@@ -206,7 +206,7 @@ func (a *Assertions) Eventually(condition func() bool, timeout time.Duration, ms
 		}
 		time.Sleep(10 * time.Millisecond)
 	}
-	
+
 	msg := fmt.Sprintf("Condition was not met within %v", timeout)
 	if len(msgAndArgs) > 0 {
 		msg = fmt.Sprintf(fmt.Sprint(msgAndArgs[0]), msgAndArgs[1:]...) + ": " + msg

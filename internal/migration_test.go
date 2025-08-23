@@ -81,7 +81,7 @@ func TestMigrateFileToSQLite(t *testing.T) {
 func TestMigrateFileToSQLite_NoFile(t *testing.T) {
 	// Test migration when no file exists
 	nonExistentFile := "/tmp/non-existent-file.log"
-	
+
 	dbTmpfile, err := os.CreateTemp("", "test-migration-nofile-*.db")
 	require.NoError(t, err)
 	dbPath := dbTmpfile.Name()
@@ -144,7 +144,7 @@ func TestMigrateFileToSQLite_ExistingDatabase(t *testing.T) {
 
 	// Verify existing data is preserved
 	events, errors := sqliteLogger.ReadEvents()
-	
+
 	select {
 	case event := <-events:
 		assert.Equal(t, EventPut, event.EventType)

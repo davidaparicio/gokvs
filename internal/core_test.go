@@ -429,11 +429,11 @@ func TestMemoryPressure(t *testing.T) {
 	runtime.GC()
 	runtime.ReadMemStats(&m3)
 
-	t.Logf("Memory usage: initial=%d, after_fill=%d, after_cleanup=%d", 
+	t.Logf("Memory usage: initial=%d, after_fill=%d, after_cleanup=%d",
 		m1.Alloc, m2.Alloc, m3.Alloc)
 
 	// Verify remaining data is still accessible
-	for i := numEntries/2; i < numEntries/2+100; i++ {
+	for i := numEntries / 2; i < numEntries/2+100; i++ {
 		key := fmt.Sprintf("memory_test_key_%d", i)
 		expectedValue := fmt.Sprintf("memory_test_value_%d_with_some_additional_data", i)
 		gotValue, err := Get(key)
@@ -454,10 +454,10 @@ func TestErrorConditions(t *testing.T) {
 	store.Unlock()
 
 	tests := []struct {
-		name           string
-		key            string
-		expectedError  error
-		setupFunc      func()
+		name          string
+		key           string
+		expectedError error
+		setupFunc     func()
 	}{
 		{
 			name:          "get non-existent key",
@@ -502,9 +502,9 @@ func TestThreadSafety(t *testing.T) {
 	store.Unlock()
 
 	const (
-		numReaders = 50
-		numWriters = 10
-		numDeletes = 5
+		numReaders   = 50
+		numWriters   = 10
+		numDeletes   = 5
 		testDuration = 100 * time.Millisecond
 	)
 

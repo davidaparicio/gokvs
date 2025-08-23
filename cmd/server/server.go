@@ -126,7 +126,7 @@ func initializeTransactionLog() error {
 		Type:            "sqlite",
 		FilePath:        "/tmp/transactions.log", // Original file path for migration
 		DBPath:          "/tmp/transactions.db",  // SQLite database path
-		MigrateFromFile: true,                      // Enable automatic migration
+		MigrateFromFile: true,                    // Enable automatic migration
 	}
 
 	transact, err = internal.NewTransactionLoggerWithConfig(config)

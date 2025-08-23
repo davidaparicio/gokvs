@@ -16,12 +16,12 @@ func CreateRequest(t *testing.T, method, path, body string) *http.Request {
 	if body != "" {
 		bodyReader = strings.NewReader(body)
 	}
-	
+
 	req, err := http.NewRequest(method, path, bodyReader)
 	if err != nil {
 		t.Fatalf("Failed to create request: %v", err)
 	}
-	
+
 	return req
 }
 
@@ -214,7 +214,7 @@ func (hh *HTTPHelper) LoadTest(req Request, concurrency, requests int) (*LoadTes
 	// Send requests with concurrency control
 	for i := 0; i < requests; i++ {
 		go func() {
-			semaphore <- struct{}{} // Acquire semaphore
+			semaphore <- struct{}{}        // Acquire semaphore
 			defer func() { <-semaphore }() // Release semaphore
 
 			resp, err := hh.SendRequest(req)
@@ -239,14 +239,14 @@ func (hh *HTTPHelper) LoadTest(req Request, concurrency, requests int) (*LoadTes
 			successful++
 			duration := result.response.Duration
 			totalDuration += duration
-			
+
 			if minDuration == 0 || duration < minDuration {
 				minDuration = duration
 			}
 			if duration > maxDuration {
 				maxDuration = duration
 			}
-			
+
 			statusCodes[result.response.StatusCode]++
 		}
 	}
@@ -254,15 +254,15 @@ func (hh *HTTPHelper) LoadTest(req Request, concurrency, requests int) (*LoadTes
 	totalTestDuration := time.Since(start)
 
 	return &LoadTestResult{
-		TotalRequests:     requests,
+		TotalRequests:      requests,
 		SuccessfulRequests: successful,
-		FailedRequests:    failed,
-		TotalDuration:     totalTestDuration,
-		AverageDuration:   totalDuration / time.Duration(successful),
-		MinDuration:       minDuration,
-		MaxDuration:       maxDuration,
-		RequestsPerSecond: float64(requests) / totalTestDuration.Seconds(),
-		StatusCodes:       statusCodes,
+		FailedRequests:     failed,
+		TotalDuration:      totalTestDuration,
+		AverageDuration:    totalDuration / time.Duration(successful),
+		MinDuration:        minDuration,
+		MaxDuration:        maxDuration,
+		RequestsPerSecond:  float64(requests) / totalTestDuration.Seconds(),
+		StatusCodes:        statusCodes,
 	}, nil
 }
 
@@ -282,7 +282,7 @@ type LoadTestResult struct {
 // String returns a string representation of the load test results
 func (ltr *LoadTestResult) String() string {
 	var buf bytes.Buffer
-	
+
 	fmt.Fprintf(&buf, "Load Test Results:\n")
 	fmt.Fprintf(&buf, "  Total Requests: %d\n", ltr.TotalRequests)
 	fmt.Fprintf(&buf, "  Successful: %d\n", ltr.SuccessfulRequests)
@@ -296,7 +296,7 @@ func (ltr *LoadTestResult) String() string {
 	for code, count := range ltr.StatusCodes {
 		fmt.Fprintf(&buf, "    %d: %d\n", code, count)
 	}
-	
+
 	return buf.String()
 }
 
@@ -305,7 +305,7 @@ func (hh *HTTPHelper) AssertResponse(resp *Response, expectedStatus int, expecte
 	if resp.StatusCode != expectedStatus {
 		hh.t.Errorf("Expected status %d, got %d", expectedStatus, resp.StatusCode)
 	}
-	
+
 	if expectedBody != "" && resp.Body != expectedBody {
 		hh.t.Errorf("Expected body %q, got %q", expectedBody, resp.Body)
 	}
@@ -316,7 +316,7 @@ func (hh *HTTPHelper) AssertResponseContains(resp *Response, expectedStatus int,
 	if resp.StatusCode != expectedStatus {
 		hh.t.Errorf("Expected status %d, got %d", expectedStatus, resp.StatusCode)
 	}
-	
+
 	if !strings.Contains(resp.Body, expectedSubstring) {
 		hh.t.Errorf("Expected body to contain %q, got %q", expectedSubstring, resp.Body)
 	}

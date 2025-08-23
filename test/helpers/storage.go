@@ -28,7 +28,7 @@ func (sh *StorageHelper) CreateTempTransactionLogger() (internal.TransactionLogg
 	if err != nil {
 		return nil, "", fmt.Errorf("failed to create temp file: %w", err)
 	}
-	
+
 	filename := tmpFile.Name()
 	tmpFile.Close()
 	sh.TempFiles = append(sh.TempFiles, filename)
@@ -47,7 +47,7 @@ func (sh *StorageHelper) CreateCorruptedLogFile() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to create temp file: %w", err)
 	}
-	
+
 	filename := tmpFile.Name()
 	sh.TempFiles = append(sh.TempFiles, filename)
 
@@ -57,7 +57,7 @@ func (sh *StorageHelper) CreateCorruptedLogFile() (string, error) {
 		tmpFile.Close()
 		return "", fmt.Errorf("failed to write corrupted data: %w", err)
 	}
-	
+
 	tmpFile.Close()
 	return filename, nil
 }
@@ -95,7 +95,7 @@ func (sh *StorageHelper) PopulateStore(data map[string]string) error {
 
 // ClearStore clears the in-memory store
 func (sh *StorageHelper) ClearStore() {
-	// This would require access to the internal store, 
+	// This would require access to the internal store,
 	// which we'll handle in the enhanced core tests
 }
 
@@ -134,7 +134,7 @@ func (sh *StorageHelper) CreateTestDataSet(size int) map[string]string {
 // CreateLargeDataSet creates a large dataset for performance testing
 func (sh *StorageHelper) CreateLargeDataSet(keySize, valueSize, count int) map[string]string {
 	data := make(map[string]string)
-	
+
 	for i := 0; i < count; i++ {
 		key := fmt.Sprintf("key_%0*d", keySize-10, i)
 		// Pad value to desired size
@@ -147,7 +147,7 @@ func (sh *StorageHelper) CreateLargeDataSet(keySize, valueSize, count int) map[s
 		}
 		data[key] = baseValue
 	}
-	
+
 	return data
 }
 

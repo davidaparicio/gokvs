@@ -64,7 +64,7 @@ func TestSQLiteTransactionLogger_WritePut(t *testing.T) {
 
 	// Read events and verify
 	events, errors := logger.ReadEvents()
-	
+
 	select {
 	case event := <-events:
 		assert.Equal(t, EventPut, event.EventType)
@@ -98,7 +98,7 @@ func TestSQLiteTransactionLogger_WriteDelete(t *testing.T) {
 
 	// Read events and verify
 	events, errors := logger.ReadEvents()
-	
+
 	select {
 	case event := <-events:
 		assert.Equal(t, EventDelete, event.EventType)
@@ -191,7 +191,7 @@ func TestSQLiteTransactionLogger_URL_Encoding(t *testing.T) {
 
 	// Read events and verify proper encoding/decoding
 	events, errors := logger.ReadEvents()
-	
+
 	select {
 	case event := <-events:
 		assert.Equal(t, EventPut, event.EventType)
@@ -236,12 +236,12 @@ func TestSQLiteTransactionLogger_Persistence(t *testing.T) {
 	// Create first logger and write some data
 	logger1, err := NewSQLiteTransactionLogger(dbPath)
 	require.NoError(t, err)
-	
+
 	logger1.Run()
 	logger1.WritePut("persistent-key", "persistent-value")
 	logger1.WriteDelete("temp-key")
 	logger1.Wait()
-	
+
 	err = logger1.Close()
 	require.NoError(t, err)
 

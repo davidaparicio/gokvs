@@ -243,21 +243,21 @@ func CreateTestServerWithMetricsTB(tb testing.TB) (http.Handler, func()) {
 func createTestServerWithMetricsImpl(tb testing.TB) (http.Handler, func()) {
 	// Create a non-global registry like the actual server
 	reg := prometheus.NewRegistry()
-	
+
 	// Keep all the golang default metrics like the actual server
 	reg.MustRegister(prometheus.NewGoCollector())
-	
+
 	// Create metrics
 	m := internal.NewMetrics(reg)
-	
+
 	// Set info metric like the actual server
 	m.Info.With(prometheus.Labels{"version": "test"}).Set(1)
-	
+
 	// Create temporary transaction log files
 	tempDir := tb.TempDir() // This automatically cleans up
 	logFile := tempDir + "/transactions.log"
 	dbFile := tempDir + "/transactions.db"
-	
+
 	// Initialize transaction logger with config similar to actual server
 	config := internal.LoggerConfig{
 		Type:            "sqlite",
@@ -265,18 +265,18 @@ func createTestServerWithMetricsImpl(tb testing.TB) (http.Handler, func()) {
 		DBPath:          dbFile,
 		MigrateFromFile: true,
 	}
-	
+
 	transact, err := internal.NewTransactionLoggerWithConfig(config)
 	if err != nil {
 		tb.Fatalf("Failed to create transaction logger: %v", err)
 	}
-	
+
 	// Start the transaction logger
 	transact.Run()
-	
+
 	// Create router with handlers that match the actual server
 	r := mux.NewRouter()
-	
+
 	// Add prometheus middleware like the actual server
 	r.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -287,20 +287,20 @@ func createTestServerWithMetricsImpl(tb testing.TB) (http.Handler, func()) {
 			timer.ObserveDuration()
 		})
 	})
-	
+
 	// Not allowed handler
 	notAllowedHandler := func(w http.ResponseWriter, r *http.Request) {
 		m.HttpNotAllowed.Inc()
 		http.Error(w, "Not Allowed", http.StatusMethodNotAllowed)
 	}
-	
+
 	// Key-value handlers matching the actual server
 	keyValuePutHandler := func(w http.ResponseWriter, r *http.Request) {
 		m.QueriesInflight.Inc()
 		defer m.QueriesInflight.Dec()
 		vars := mux.Vars(r)
 		key := vars["key"]
-	
+
 		// Read request body
 		value, err := io.ReadAll(r.Body)
 		defer r.Body.Close()
@@ -308,24 +308,24 @@ func createTestServerWithMetricsImpl(tb testing.TB) (http.Handler, func()) {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-	
+
 		err = internal.Put(key, string(value))
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-	
+
 		w.WriteHeader(http.StatusCreated)
 		transact.WritePut(key, string(value))
 		m.EventsPut.Inc()
 	}
-	
+
 	keyValueGetHandler := func(w http.ResponseWriter, r *http.Request) {
 		m.QueriesInflight.Inc()
 		defer m.QueriesInflight.Dec()
 		vars := mux.Vars(r)
 		key := vars["key"]
-	
+
 		value, err := internal.Get(key)
 		if err == internal.ErrorNoSuchKey {
 			http.Error(w, err.Error(), http.StatusNotFound)
@@ -336,47 +336,47 @@ func createTestServerWithMetricsImpl(tb testing.TB) (http.Handler, func()) {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-	
+
 		w.Write([]byte(value))
 		m.EventsGet.Inc()
 	}
-	
+
 	keyValueDeleteHandler := func(w http.ResponseWriter, r *http.Request) {
 		m.QueriesInflight.Inc()
 		defer m.QueriesInflight.Dec()
 		vars := mux.Vars(r)
 		key := vars["key"]
-	
+
 		err := internal.Delete(key)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-	
+
 		transact.WriteDelete(key)
 		m.EventsDelete.Inc()
 	}
-	
+
 	checkHandler := func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("imok\n"))
 	}
-	
+
 	// Associate paths with handlers exactly like the actual server
 	r.HandleFunc("/v1/{key}", keyValueGetHandler).Methods("GET")
 	r.HandleFunc("/v1/{key}", keyValuePutHandler).Methods("PUT")
 	r.HandleFunc("/v1/{key}", keyValueDeleteHandler).Methods("DELETE")
-	
+
 	r.HandleFunc("/healthz", checkHandler)
 	r.HandleFunc("/ruok", checkHandler)
-	
+
 	// Expose metrics endpoint
 	r.Handle("/metrics", promhttp.HandlerFor(reg, promhttp.HandlerOpts{Registry: reg}))
-	
+
 	// Default handlers for unmatched routes
 	r.HandleFunc("/", notAllowedHandler)
 	r.HandleFunc("/v1", notAllowedHandler)
 	r.HandleFunc("/v1/{key}", notAllowedHandler) // This will catch other methods
-	
+
 	// Cleanup function
 	cleanup := func() {
 		if err := transact.Close(); err != nil {
@@ -384,7 +384,7 @@ func createTestServerWithMetricsImpl(tb testing.TB) (http.Handler, func()) {
 		}
 		// tempDir automatically cleaned up by tb.TempDir()
 	}
-	
+
 	return r, cleanup
 }
 

@@ -93,7 +93,7 @@ func TestSQLiteTransactionLogger_Integration_With_Core(t *testing.T) {
 				break
 			}
 			replayedEvents = append(replayedEvents, event)
-			
+
 			// Simulate replay logic
 			switch event.EventType {
 			case EventPut:
@@ -103,7 +103,7 @@ func TestSQLiteTransactionLogger_Integration_With_Core(t *testing.T) {
 				Delete(event.Key) // Ignore error for delete operations
 			}
 			eventCount++
-			
+
 		case err := <-errors:
 			if err != nil {
 				t.Fatalf("Error during replay: %v", err)
@@ -143,11 +143,11 @@ func TestSQLiteTransactionLogger_Concurrent_Operations(t *testing.T) {
 	for i := 0; i < numGoroutines; i++ {
 		go func(goroutineID int) {
 			defer func() { done <- true }()
-			
+
 			for j := 0; j < operationsPerGoroutine; j++ {
 				key := fmt.Sprintf("key-%d-%d", goroutineID, j)
 				value := fmt.Sprintf("value-%d-%d", goroutineID, j)
-				
+
 				// Alternate between put and delete operations
 				if j%2 == 0 {
 					logger.WritePut(key, value)
@@ -198,22 +198,22 @@ func TestSQLiteTransactionLogger_Large_Dataset(t *testing.T) {
 
 	// Write a large number of operations
 	numOperations := 1000
-	
+
 	start := time.Now()
 	for i := 0; i < numOperations; i++ {
 		if i%100 == 0 {
 			t.Logf("Processed %d/%d operations", i, numOperations)
 		}
-		
+
 		key := fmt.Sprintf("large-key-%06d", i)
 		value := fmt.Sprintf("large-value-%06d-with-some-additional-data-to-make-it-longer", i)
 		logger.WritePut(key, value)
 	}
-	
+
 	logger.Wait()
 	duration := time.Since(start)
-	
-	t.Logf("Wrote %d operations in %v (%.2f ops/sec)", 
+
+	t.Logf("Wrote %d operations in %v (%.2f ops/sec)",
 		numOperations, duration, float64(numOperations)/duration.Seconds())
 
 	// Verify count
@@ -244,9 +244,9 @@ func TestSQLiteTransactionLogger_Large_Dataset(t *testing.T) {
 			t.Fatalf("Timeout reading events after %d events", readCount)
 		}
 	}
-	
+
 	readDuration := time.Since(start)
-	t.Logf("Read %d events in %v (%.2f ops/sec)", 
+	t.Logf("Read %d events in %v (%.2f ops/sec)",
 		readCount, readDuration, float64(readCount)/readDuration.Seconds())
 
 	// Verify integrity
@@ -266,7 +266,7 @@ func TestSQLiteTransactionLogger_Error_Recovery(t *testing.T) {
 	// Create logger and write some data
 	logger1, err := NewSQLiteTransactionLogger(dbPath)
 	require.NoError(t, err)
-	
+
 	logger1.Run()
 	logger1.WritePut("test-key-1", "test-value-1")
 	logger1.WritePut("test-key-2", "test-value-2")

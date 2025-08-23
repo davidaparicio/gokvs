@@ -92,7 +92,7 @@ func TestWriteAppend(t *testing.T) {
 		}
 	}()
 
-	// Note: lastSequence is not accessible via interface, 
+	// Note: lastSequence is not accessible via interface,
 	// so we'll count events instead
 	eventsCount := 0
 	chev, cherr = tl2.ReadEvents()
@@ -139,7 +139,7 @@ func TestWritePut(t *testing.T) {
 
 	// Count events instead of accessing private lastSequence field
 	eventsCount2 := 0
-	
+
 	// Count events from first logger
 	tl2, _ := NewTransactionLogger(filename)
 	evin, errin := tl2.ReadEvents()
@@ -423,7 +423,7 @@ func TestConcurrentLogging(t *testing.T) {
 				key := fmt.Sprintf("concurrent_key_%d_%d", id, j)
 				value := fmt.Sprintf("concurrent_value_%d_%d", id, j)
 				logger.WritePut(key, value)
-				
+
 				// Occasionally write deletes
 				if j%10 == 0 {
 					deleteKey := fmt.Sprintf("concurrent_key_%d_%d", id, j-1)
@@ -447,7 +447,7 @@ func TestConcurrentLogging(t *testing.T) {
 
 	// Count events
 	eventCount := 0
-	expectedEvents := numGoroutines * numOperations + (numGoroutines * numOperations / 10) // puts + deletes
+	expectedEvents := numGoroutines*numOperations + (numGoroutines * numOperations / 10) // puts + deletes
 	timeout := time.After(5 * time.Second)
 
 	for {
@@ -679,7 +679,7 @@ func TestLargeTransactionLog(t *testing.T) {
 
 	logger.Wait()
 	writeDuration := time.Since(start)
-	t.Logf("Wrote %d entries in %v (%.2f entries/sec)", 
+	t.Logf("Wrote %d entries in %v (%.2f entries/sec)",
 		numEntries, writeDuration, float64(numEntries)/writeDuration.Seconds())
 
 	logger.Close()
@@ -705,7 +705,7 @@ func TestLargeTransactionLog(t *testing.T) {
 		case err := <-errors:
 			if err != nil {
 				readDuration := time.Since(start)
-				t.Logf("Read %d events in %v (%.2f events/sec)", 
+				t.Logf("Read %d events in %v (%.2f events/sec)",
 					eventCount, readDuration, float64(eventCount)/readDuration.Seconds())
 				if eventCount != numEntries {
 					t.Errorf("Expected %d events, got %d", numEntries, eventCount)

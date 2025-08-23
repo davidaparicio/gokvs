@@ -24,9 +24,9 @@ func TestMetricsIntegrationWorkflow(t *testing.T) {
 
 	// Perform various operations
 	testCases := []struct {
-		method     string
-		path       string
-		body       string
+		method         string
+		path           string
+		body           string
 		expectedStatus int
 	}{
 		{"PUT", "/v1/test-key-1", "test-value-1", http.StatusCreated},
@@ -50,11 +50,11 @@ func TestMetricsIntegrationWorkflow(t *testing.T) {
 	req := helpers.CreateRequest(t, "GET", "/metrics", "")
 	resp := httptest.NewRecorder()
 	server.ServeHTTP(resp, req)
-	
+
 	require.Equal(t, http.StatusOK, resp.Code)
-	
+
 	metricsBody := resp.Body.String()
-	
+
 	// Verify specific metrics are present and have expected values
 	t.Run("VerifyEventsPutMetric", func(t *testing.T) {
 		// Should have 2 PUT events
@@ -62,31 +62,31 @@ func TestMetricsIntegrationWorkflow(t *testing.T) {
 		putCount := extractMetricValue(t, metricsBody, "gokvs_events_put")
 		assert.GreaterOrEqual(t, putCount, 2.0)
 	})
-	
+
 	t.Run("VerifyEventsGetMetric", func(t *testing.T) {
 		// Should have at least 3 GET events (2 successful + 1 not found)
 		assert.Contains(t, metricsBody, "gokvs_events_get")
 		getCount := extractMetricValue(t, metricsBody, "gokvs_events_get")
 		assert.GreaterOrEqual(t, getCount, 3.0)
 	})
-	
+
 	t.Run("VerifyEventsDeleteMetric", func(t *testing.T) {
 		// Should have 1 DELETE event
 		assert.Contains(t, metricsBody, "gokvs_events_delete")
 		deleteCount := extractMetricValue(t, metricsBody, "gokvs_events_delete")
 		assert.GreaterOrEqual(t, deleteCount, 1.0)
 	})
-	
+
 	t.Run("VerifyRequestsTotal", func(t *testing.T) {
 		// Should have HTTP request metrics with different status codes
 		assert.Contains(t, metricsBody, "http_requests_total")
-		
+
 		// Verify we have metrics for successful requests
 		assert.Contains(t, metricsBody, `code="200"`)
 		assert.Contains(t, metricsBody, `code="201"`)
 		assert.Contains(t, metricsBody, `code="404"`)
 	})
-	
+
 	t.Run("VerifyRequestDuration", func(t *testing.T) {
 		// Should have request duration histogram
 		assert.Contains(t, metricsBody, "http_request_duration_seconds")
@@ -94,7 +94,7 @@ func TestMetricsIntegrationWorkflow(t *testing.T) {
 		assert.Contains(t, metricsBody, "_count")
 		assert.Contains(t, metricsBody, "_sum")
 	})
-	
+
 	t.Run("VerifyQueriesInflight", func(t *testing.T) {
 		// Should have queries inflight metric (should be 0 when not processing)
 		assert.Contains(t, metricsBody, "gokvs_queries_inflight")
@@ -130,17 +130,17 @@ func TestMetricsConcurrentWorkflow(t *testing.T) {
 		wg.Add(1)
 		go func(workerID int) {
 			defer wg.Done()
-			
+
 			for j := 0; j < opsPerWorker; j++ {
 				key := fmt.Sprintf("concurrent-key-%d-%d", workerID, j)
 				value := fmt.Sprintf("concurrent-value-%d-%d", workerID, j)
-				
+
 				// PUT operation
 				req := helpers.CreateRequest(t, "PUT", fmt.Sprintf("/v1/%s", key), value)
 				resp := httptest.NewRecorder()
 				server.ServeHTTP(resp, req)
 				assert.Equal(t, http.StatusCreated, resp.Code)
-				
+
 				// GET operation
 				req = helpers.CreateRequest(t, "GET", fmt.Sprintf("/v1/%s", key), "")
 				resp = httptest.NewRecorder()
@@ -162,13 +162,13 @@ func TestMetricsConcurrentWorkflow(t *testing.T) {
 	actualPutIncrease := finalMetrics.EventsPut - initialMetrics.EventsPut
 	actualGetIncrease := finalMetrics.EventsGet - initialMetrics.EventsGet
 
-	assert.GreaterOrEqual(t, actualPutIncrease, expectedPuts, 
+	assert.GreaterOrEqual(t, actualPutIncrease, expectedPuts,
 		"PUT events should increase by at least %v, got %v", expectedPuts, actualPutIncrease)
 	assert.GreaterOrEqual(t, actualGetIncrease, expectedGets,
 		"GET events should increase by at least %v, got %v", expectedGets, actualGetIncrease)
 
 	// Verify queries inflight returns to 0
-	assert.Equal(t, 0.0, finalMetrics.QueriesInflight, 
+	assert.Equal(t, 0.0, finalMetrics.QueriesInflight,
 		"Queries inflight should return to 0 after all operations complete")
 }
 
@@ -222,15 +222,15 @@ func TestMetricsEndpointAvailability(t *testing.T) {
 		req := helpers.CreateRequest(t, "GET", "/metrics", "")
 		resp := httptest.NewRecorder()
 		server.ServeHTTP(resp, req)
-		
+
 		require.Equal(t, http.StatusOK, resp.Code)
-		
+
 		body := resp.Body.String()
-		
+
 		// Verify it's valid Prometheus format
 		assert.Contains(t, body, "# HELP")
 		assert.Contains(t, body, "# TYPE")
-		
+
 		// Verify content type (allow additional parameters)
 		contentType := resp.Header().Get("Content-Type")
 		assert.Contains(t, contentType, "text/plain; version=0.0.4; charset=utf-8",
@@ -242,7 +242,7 @@ func TestMetricsEndpointAvailability(t *testing.T) {
 func TestMetricsReset(t *testing.T) {
 	// First server instance
 	server1, cleanup1 := helpers.CreateTestServerWithMetrics(t)
-	
+
 	// Perform some operations
 	req := helpers.CreateRequest(t, "PUT", "/v1/test-key", "test-value")
 	resp := httptest.NewRecorder()
@@ -252,7 +252,7 @@ func TestMetricsReset(t *testing.T) {
 	// Get metrics from first instance
 	metrics1 := getMetricsSnapshot(t, server1)
 	assert.Greater(t, metrics1.EventsPut, 0.0)
-	
+
 	cleanup1()
 
 	// Second server instance (simulating restart)
@@ -261,7 +261,7 @@ func TestMetricsReset(t *testing.T) {
 
 	// Get initial metrics from second instance
 	metrics2 := getMetricsSnapshot(t, server2)
-	
+
 	// Verify metrics reset to initial state (except for replayed events)
 	// The events_replayed counter should show activity from transaction log
 	assert.GreaterOrEqual(t, metrics2.EventsReplayed, 0.0)
@@ -286,19 +286,19 @@ func TestMetricsHighLoad(t *testing.T) {
 	close(requestChan)
 
 	var wg sync.WaitGroup
-	
+
 	startTime := time.Now()
-	
+
 	// Launch workers
 	for i := 0; i < numWorkers; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			
+
 			for reqNum := range requestChan {
 				key := fmt.Sprintf("load-test-key-%d", reqNum)
 				value := fmt.Sprintf("load-test-value-%d", reqNum)
-				
+
 				req := helpers.CreateRequest(t, "PUT", fmt.Sprintf("/v1/%s", key), value)
 				resp := httptest.NewRecorder()
 				server.ServeHTTP(resp, req)
@@ -320,7 +320,7 @@ func TestMetricsHighLoad(t *testing.T) {
 	// Verify performance (this is just a sanity check)
 	rps := float64(numRequests) / duration.Seconds()
 	t.Logf("Processed %d requests in %v (%.2f req/sec)", numRequests, duration, rps)
-	
+
 	// Sanity check - should be able to handle at least 100 req/sec
 	assert.Greater(t, rps, 100.0, "Should handle at least 100 requests per second")
 
@@ -346,11 +346,11 @@ func getMetricsSnapshot(t *testing.T, server http.Handler) MetricsSnapshot {
 	req := helpers.CreateRequest(t, "GET", "/metrics", "")
 	resp := httptest.NewRecorder()
 	server.ServeHTTP(resp, req)
-	
+
 	require.Equal(t, http.StatusOK, resp.Code)
-	
+
 	body := resp.Body.String()
-	
+
 	return MetricsSnapshot{
 		EventsPut:       extractMetricValue(t, body, "gokvs_events_put"),
 		EventsGet:       extractMetricValue(t, body, "gokvs_events_get"),
@@ -377,12 +377,12 @@ func extractMetricValue(t *testing.T, body, metricName string) float64 {
 			}
 		}
 	}
-	
+
 	// If not found as simple counter, try to find as counter with labels or histogram
 	// For counters with labels, find any line starting with metricName{
 	pattern := fmt.Sprintf(`^%s(?:\{[^}]*\})?\s+([0-9\.]+)`, regexp.QuoteMeta(metricName))
 	re := regexp.MustCompile(pattern)
-	
+
 	var total float64
 	for _, line := range lines {
 		if matches := re.FindStringSubmatch(line); len(matches) > 1 {
@@ -392,6 +392,6 @@ func extractMetricValue(t *testing.T, body, metricName string) float64 {
 			}
 		}
 	}
-	
+
 	return total
 }

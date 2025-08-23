@@ -109,7 +109,7 @@ func TestMetricConcurrency(t *testing.T) {
 	metrics := NewMetrics(reg)
 
 	const (
-		numGoroutines = 50
+		numGoroutines          = 50
 		incrementsPerGoroutine = 100
 	)
 
@@ -235,10 +235,10 @@ func TestPrometheusFormat(t *testing.T) {
 	metricNames := make(map[string]bool)
 	for _, family := range gathered {
 		metricNames[family.GetName()] = true
-		
+
 		// Verify each metric family has metrics
 		assert.True(t, len(family.GetMetric()) > 0, "Metric family %s should have metrics", family.GetName())
-		
+
 		// Verify metric family has a type
 		assert.NotNil(t, family.Type, "Metric family %s should have a type", family.GetName())
 	}
@@ -288,7 +288,7 @@ func TestMetricLabels(t *testing.T) {
 	for _, metric := range requestsFamily.GetMetric() {
 		labels := metric.GetLabel()
 		assert.Equal(t, 2, len(labels), "Each metric should have 2 labels")
-		
+
 		// Verify label names
 		labelNames := make(map[string]bool)
 		for _, label := range labels {
