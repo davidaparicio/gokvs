@@ -3,8 +3,14 @@ name: Validate
 
 on: [push, pull_request]
 
+permissions:
+  contents: read
+
 jobs:
   validate:
+    permissions:
+      contents: read  # for actions/checkout to fetch code
+      pull-requests: read  # for golangci/golangci-lint-action to fetch pull requests
     strategy:
       matrix:
         os: [ubuntu-latest]
@@ -18,12 +24,17 @@ jobs:
       #     key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
       #     restore-keys: |
       #       ${{ runner.os }}-go-
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@20cf305ff2072d973412fa9b1e3a4f227bda3c76 # v2.14.0
+        with:
+          egress-policy: audit
+
       - name: Install Go
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
         with:
           go-version: ${{ matrix.go-version }}
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
       - name: Format
         run: | # test -z $(gofmt -l -w -s ./)
           if ! test -z $(gofmt -l -s ./); then
@@ -31,16 +42,16 @@ jobs:
             exit 1
           fi
       - name: Lint
-        uses: golangci/golangci-lint-action@v9
+        uses: golangci/golangci-lint-action@1e7e51e771db61008b38414a730f564565cf7c20 # v9.2.0
       - name: Test
         run: go test -v -race -cover -coverprofile=coverage.txt ./... | tee -a test-results.txt
       - name: Upload Test Results
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: test-results-${{ matrix.os }}-${{ matrix.go-version }}
           path: test-results.txt
       # - name: Upload Coverage
-      #   uses: actions/upload-artifact@v6
+      #   uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
       #   with:
       #     name: coverage-${{ matrix.os }}-${{ matrix.go-version }}
       #     path: coverage.txt
@@ -56,7 +67,7 @@ jobs:
       #       go test -run=XXX -bench=. | tee -a bench.txt
       #     done
       # - name: Upload Benchmark
-      #   uses: actions/upload-artifact@v6
+      #   uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
       #   with:
       #     name: bench-${{ matrix.os }}-${{ matrix.go-version }} #-${{ github.run_id }} # Unique per matrix run
       #     path: bench.txt
