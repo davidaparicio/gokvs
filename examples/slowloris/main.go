@@ -14,7 +14,7 @@ import (
 
 func main() {
 	target := "localhost:8080"
-	connections := 100000 //100000
+	connections := 1000 //10000
 
 	for i := 0; i < connections; i++ {
 		go slowloris(target)
