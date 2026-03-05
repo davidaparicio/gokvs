@@ -7,6 +7,9 @@ name: Benchstat
 on:
   workflow_call:
 
+permissions:
+  pull-requests: write
+
 env:
   BENCH_COUNT: 10
 
@@ -38,6 +41,36 @@ jobs:
           echo '```' >> $GITHUB_STEP_SUMMARY
           cat benchstat.txt >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
+      - name: Comment PR with benchmark results
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const result = fs.readFileSync('benchstat.txt', 'utf8');
+            const body = `## Benchmark Results\n\`\`\`\n${result}\`\`\`\n<details><summary>ℹ️ About</summary>\n\nBenchmarks ran with \`-count=${{ env.BENCH_COUNT }}\`. Statistically significant changes (p < 0.05) are marked by benchstat.\n</details>`;
+            const marker = '## Benchmark Results';
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const existing = comments.find(c => c.body.includes(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }
       - name: Upload benchmark results
         uses: actions/upload-artifact@v7
         with:

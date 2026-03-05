@@ -14,7 +14,7 @@ permissions:
   id-token: write
   actions: read
   security-events: write
-  pull-requests: read
+  pull-requests: write
 
 jobs:
   # Security Block - runs in parallel
@@ -61,10 +61,9 @@ jobs:
     uses: ./.github/workflows/docker-releaser.yml
     secrets: inherit
 
-  # Benchstat Block - runs at the very end
+  # Benchstat Block - runs after tests complete
   benchmarks:
     name: Performance Benchmarks
-    needs: [goreleaser, docker-release]
-    if: always() && (needs.goreleaser.result == 'success' || needs.goreleaser.result == 'skipped') && (needs.docker-release.result == 'success' || needs.docker-release.result == 'skipped')
+    needs: [golangci-lint, go-test]
     uses: ./.github/workflows/benchstat.yml
     secrets: inherit
