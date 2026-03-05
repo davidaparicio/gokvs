@@ -18,16 +18,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
       - name: Benchmark
-        run: |
-          for i in {1..5}; do
-            go test -run=XXX -bench=. | tee -a bench.txt
-          done
+        run: go test -run=XXX -bench=. -benchmem -count=5 | tee bench.txt
       - name: Upload Benchmark
         uses: actions/upload-artifact@v7
         with:
           name: bench-incoming
           path: bench.txt
-  current:
+  baseline:
     runs-on: ubuntu-latest
     steps:
       - name: Install Go
@@ -39,17 +36,14 @@ jobs:
         with:
           ref: main
       - name: Benchmark
-        run: |
-          for i in {1..5}; do
-            go test -run=XXX -bench=. | tee -a bench.txt
-          done
+        run: go test -run=XXX -bench=. -benchmem -count=5 | tee bench.txt
       - name: Upload Benchmark
         uses: actions/upload-artifact@v7
         with:
-          name: bench-current
+          name: bench-baseline
           path: bench.txt
   benchstat:
-    needs: [incoming, current]
+    needs: [incoming, baseline]
     runs-on: ubuntu-latest
     steps:
       - name: Install Go
@@ -62,12 +56,19 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           name: bench-incoming
-      - name: Download Current
+          path: bench-incoming
+      - name: Download Baseline
         uses: actions/download-artifact@v8
         with:
-          name: bench-current
+          name: bench-baseline
+          path: bench-baseline
       - name: Benchstat Results
-        run: benchstat bench-current/bench.txt bench-incoming/bench.txt | tee -a benchstat.txt
+        run: |
+          benchstat bench-baseline/bench.txt bench-incoming/bench.txt | tee benchstat.txt
+          echo '## Benchstat Results' >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          cat benchstat.txt >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
       - name: Upload benchstat results
         uses: actions/upload-artifact@v7
         with:
