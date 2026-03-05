@@ -27,6 +27,11 @@ jobs:
         with:
           # we let the report trigger content trigger a failure using the GitHub Security features.
           args: '-no-fail -fmt sarif -out results.sarif ./...'
+      - name: Fix SARIF relationships
+        run: |
+          jq 'if .runs[0].tool.driver.rules then 
+                .runs[0].tool.driver.rules |= map(if .relationships then (.relationships |= []) else . end)
+              else . end' results.sarif > results.fixed.sarif && mv results.fixed.sarif results.sarif
       - name: Upload SARIF file
         uses: github/codeql-action/upload-sarif@v4
         with:
