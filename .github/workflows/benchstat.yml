@@ -47,8 +47,60 @@ jobs:
         with:
           script: |
             const fs = require('fs');
-            const result = fs.readFileSync('benchstat.txt', 'utf8');
-            const body = `## Benchmark Results\n\`\`\`\n${result}\`\`\`\n<details><summary>ℹ️ About</summary>\n\nBenchmarks ran with \`-count=${{ env.BENCH_COUNT }}\`. Statistically significant changes (p < 0.05) are marked by benchstat.\n</details>`;
+            const text = fs.readFileSync('benchstat.txt', 'utf8');
+            const lines = text.split('\n');
+
+            const metaLines = [];
+            const sections = [];
+            let current = null;
+
+            for (const line of lines) {
+              if (line.trim() === '') {
+                if (current) { sections.push(current); current = null; }
+                continue;
+              }
+              if (line.includes('│')) {
+                if (!current) current = { pipes: [], data: [], notes: [] };
+                current.pipes.push(line);
+              } else if (current) {
+                if (/^[¹²³⁴⁵]/.test(line.trim())) current.notes.push(line.trim());
+                else current.data.push(line);
+              } else {
+                metaLines.push(line.trim());
+              }
+            }
+            if (current) sections.push(current);
+
+            function parseRow(line) {
+              return line.trim().split(/\s{2,}/).filter(Boolean);
+            }
+
+            let md = '## Benchmark Results\n\n';
+            if (metaLines.length > 0) {
+              md += metaLines.map(l => '> ' + l).join('\n') + '\n\n';
+            }
+
+            for (const s of sections) {
+              if (s.pipes.length < 2) continue;
+              const metric = s.pipes[1].split('│').map(p => p.trim()).filter(Boolean)[0];
+              md += '#### ' + metric + '\n\n';
+              md += '| Benchmark | Baseline | Incoming | Delta |\n';
+              md += '|:----------|:--------:|:--------:|:-----:|\n';
+              for (const row of s.data) {
+                const parts = parseRow(row);
+                if (parts.length === 0) continue;
+                const [name, baseline = '', incoming = '', delta = ''] = parts;
+                const b = name === 'geomean' ? v => '**' + v + '**' : v => v;
+                md += '| ' + b(name) + ' | ' + b(baseline) + ' | ' + b(incoming) + ' | ' + b(delta) + ' |\n';
+              }
+              md += '\n';
+              if (s.notes.length > 0) {
+                md += s.notes.map(n => '_' + n + '_').join('  \n') + '\n\n';
+              }
+            }
+
+            md += '<details><summary>ℹ️ About</summary>\n\nBenchmarks ran with `-count=${{ env.BENCH_COUNT }}`. Statistically significant changes (p < 0.05) are marked by benchstat.\n</details>';
+
             const marker = '## Benchmark Results';
             const { data: comments } = await github.rest.issues.listComments({
               owner: context.repo.owner,
@@ -61,14 +113,14 @@ jobs:
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 comment_id: existing.id,
-                body,
+                body: md,
               });
             } else {
               await github.rest.issues.createComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: context.issue.number,
-                body,
+                body: md,
               });
             }
       - name: Upload benchmark results
