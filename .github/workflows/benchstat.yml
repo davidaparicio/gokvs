@@ -17,8 +17,8 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v6
         with:
-          # go-version: stable
-          go-version-file: go.mod
+          go-version: stable
+          # go-version-file: go.mod
       - name: Checkout
         uses: actions/checkout@v6
       - name: Benchmark
@@ -34,8 +34,8 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v6
         with:
-          # go-version: stable
-          go-version-file: go.mod
+          go-version: stable
+          # go-version-file: go.mod
       - name: Checkout
         uses: actions/checkout@v6
         with:
@@ -54,8 +54,8 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v6
         with:
-          # go-version: stable
-          go-version-file: go.mod
+          go-version: stable
+          # go-version-file: go.mod
       - name: Install benchstat
         run: go install golang.org/x/perf/cmd/benchstat@latest
       - name: Download Incoming
