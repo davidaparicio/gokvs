@@ -17,12 +17,12 @@ jobs:
   benchstat:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout incoming branch
+        uses: actions/checkout@v6
       - name: Install Go
         uses: actions/setup-go@v6
         with:
           go-version: stable
-      - name: Checkout incoming branch
-        uses: actions/checkout@v6
       - name: Install benchstat
         run: go install golang.org/x/perf/cmd/benchstat@latest
       - name: Benchmark incoming branch
