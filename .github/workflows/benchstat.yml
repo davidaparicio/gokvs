@@ -8,75 +8,41 @@ on:
   workflow_call:
 
 env:
-  BENCH_COUNT: 5
+  BENCH_COUNT: 10
 
 jobs:
-  incoming:
+  benchstat:
     runs-on: ubuntu-latest
     steps:
       - name: Install Go
         uses: actions/setup-go@v6
         with:
           go-version: stable
-          # go-version-file: go.mod
-      - name: Checkout
+      - name: Checkout incoming branch
         uses: actions/checkout@v6
-      - name: Benchmark
-        run: go test -run=XXX -bench=. -benchmem -count=${{ env.BENCH_COUNT }} ./... | tee bench.txt
-      - name: Upload Benchmark
-        uses: actions/upload-artifact@v7
-        with:
-          name: bench-incoming
-          path: bench.txt
-  baseline:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Install Go
-        uses: actions/setup-go@v6
-        with:
-          go-version: stable
-          # go-version-file: go.mod
-      - name: Checkout
+      - name: Install benchstat
+        run: go install golang.org/x/perf/cmd/benchstat@latest
+      - name: Benchmark incoming branch
+        run: go test -run=XXX -bench=. -benchmem -count=${{ env.BENCH_COUNT }} ./... | tee bench-incoming.txt
+      - name: Checkout baseline (main)
         uses: actions/checkout@v6
         with:
           ref: main
-      - name: Benchmark
-        run: go test -run=XXX -bench=. -benchmem -count=${{ env.BENCH_COUNT }} ./... | tee bench.txt
-      - name: Upload Benchmark
-        uses: actions/upload-artifact@v7
-        with:
-          name: bench-baseline
-          path: bench.txt
-  benchstat:
-    needs: [incoming, baseline]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Install Go
-        uses: actions/setup-go@v6
-        with:
-          go-version: stable
-          # go-version-file: go.mod
-      - name: Install benchstat
-        run: go install golang.org/x/perf/cmd/benchstat@latest
-      - name: Download Incoming
-        uses: actions/download-artifact@v8
-        with:
-          name: bench-incoming
-          path: bench-incoming
-      - name: Download Baseline
-        uses: actions/download-artifact@v8
-        with:
-          name: bench-baseline
-          path: bench-baseline
+          clean: false
+      - name: Benchmark baseline (main)
+        run: go test -run=XXX -bench=. -benchmem -count=${{ env.BENCH_COUNT }} ./... | tee bench-baseline.txt
       - name: Benchstat Results
         run: |
-          benchstat bench-baseline/bench.txt bench-incoming/bench.txt | tee benchstat.txt
+          benchstat bench-baseline.txt bench-incoming.txt | tee benchstat.txt
           echo '## Benchstat Results' >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
           cat benchstat.txt >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
-      - name: Upload benchstat results
+      - name: Upload benchmark results
         uses: actions/upload-artifact@v7
         with:
           name: benchstat
-          path: benchstat.txt
+          path: |
+            bench-incoming.txt
+            bench-baseline.txt
+            benchstat.txt
