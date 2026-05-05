@@ -8,6 +8,9 @@ on:
     - cron: '13 10 * * 4'
   workflow_call:
 
+permissions:
+  contents: read
+
 jobs:
   analyze:
     name: Analyze gosec
@@ -20,10 +23,15 @@ jobs:
       GO111MODULE: on
     
     steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@a5ad31d6a139d249332a2605b85202e8c0b78450 # v2.19.1
+        with:
+          egress-policy: audit
+
       - name: Checkout Source
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Run Gosec Security Scanner
-        uses: securego/gosec@v2.26.1 #master
+        uses: securego/gosec@4a3bd8af174872c778439083ded7adbf3747e770 # v2.26.1
         with:
           # we let the report trigger content trigger a failure using the GitHub Security features.
           args: '-no-fail -fmt sarif -out results.sarif ./...'
@@ -33,7 +41,7 @@ jobs:
                 .runs[0].tool.driver.rules |= map(if .relationships then (.relationships |= []) else . end)
               else . end' results.sarif > results.fixed.sarif && mv results.fixed.sarif results.sarif
       - name: Upload SARIF file
-        uses: github/codeql-action/upload-sarif@v4
+        uses: github/codeql-action/upload-sarif@e46ed2cbd01164d986452f91f178727624ae40d7 # v4.35.3
         with:
           # Path to SARIF file relative to the root of the repository
           sarif_file: results.sarif

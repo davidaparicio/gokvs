@@ -6,7 +6,12 @@ jobs:
     auto_comment:
         runs-on: ubuntu-latest
         steps:
-        - uses: aws-actions/closed-issue-message@v2
+        - name: Harden the runner (Audit all outbound calls)
+          uses: step-security/harden-runner@a5ad31d6a139d249332a2605b85202e8c0b78450 # v2.19.1
+          with:
+            egress-policy: audit
+
+        - uses: aws-actions/closed-issue-message@10aaf6366131b673a7c8b7742f8b3849f1d44f18 # v2
           with:
             # These inputs are both required
             repo-token: "${{ secrets.GITHUB_TOKEN }}"
