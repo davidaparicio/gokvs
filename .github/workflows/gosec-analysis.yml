@@ -41,7 +41,7 @@ jobs:
                 .runs[0].tool.driver.rules |= map(if .relationships then (.relationships |= []) else . end)
               else . end' results.sarif > results.fixed.sarif && mv results.fixed.sarif results.sarif
       - name: Upload SARIF file
-        uses: github/codeql-action/upload-sarif@68bde559dea0fdcac2102bfdf6230c5f70eb485e # v4.35.4
+        uses: github/codeql-action/upload-sarif@9e0d7b8d25671d64c341c19c0152d693099fb5ba # v4.35.5
         with:
           # Path to SARIF file relative to the root of the repository
           sarif_file: results.sarif
