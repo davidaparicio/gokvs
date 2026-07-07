@@ -1,0 +1,12 @@
+version: v2
+modules:
+  - path: api
+  - path: third_party
+lint:
+  use:
+    - STANDARD
+  ignore:
+    - third_party
+breaking:
+  use:
+    - FILE

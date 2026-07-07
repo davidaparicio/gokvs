@@ -62,6 +62,26 @@ run: ## Run the server
 	-X '${PKG_LDFLAGS}.Revision=$(COMMIT)'" \
 	cmd/server/server.go
 
+.PHONY: proto
+proto: ## Regenerate gRPC/gateway code from api/kvs/v1/kvs.proto 🧬
+	@echo "Generating protobuf code..."
+	buf lint api
+	buf generate api
+
+.PHONY: grpc-run
+grpc-run: ## Run the gRPC server (gRPC :50051, REST gateway :8081)
+	@echo "Running gRPC server...\n"
+	@go run ./cmd/grpc
+
+.PHONY: grpc-run-tls
+grpc-run-tls: certs ## Run the gRPC server with TLS enabled 🔐
+	@echo "Running gRPC server with TLS...\n"
+	@go run ./cmd/grpc -tls-cert certs/server.crt -tls-key certs/server.key
+
+.PHONY: certs
+certs: ## Generate self-signed certificates in ./certs 🔐
+	@test -f certs/server.crt || ./scripts/gen-certs.sh certs
+
 # -X 'main.Version=$(version)' \
 # -X 'main.AuthorName=$(authorname)' \
 # -X 'main.AuthorEmail=$(authoremail)' \

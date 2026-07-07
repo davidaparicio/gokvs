@@ -171,3 +171,5 @@ fabric.properties
 .ionide
 
 # End of https://www.toptal.com/developers/gitignore/api/go,goland,visualstudiocode
+# Self-signed TLS certificates for local gRPC testing
+certs/
