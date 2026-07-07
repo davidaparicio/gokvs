@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"sync"
 	"syscall"
 	"time"
@@ -23,14 +24,39 @@ import (
 var transact *internal.TransactionLog
 var m *internal.Metrics
 
+// statusRecorder wraps http.ResponseWriter to capture the status code written
+// by the handler so it can be used as a Prometheus label.
+type statusRecorder struct {
+	http.ResponseWriter
+	status int
+}
+
+func (rec *statusRecorder) WriteHeader(code int) {
+	rec.status = code
+	rec.ResponseWriter.WriteHeader(code)
+}
+
 // prometheusMiddleware implements mux.MiddlewareFunc + loggingMiddleware
 func prometheusLoggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		log.Println(r.Method, r.RequestURI)
-		//route := mux.CurrentRoute(r); path, _ := route.GetPathTemplate()
-		timer := prometheus.NewTimer(m.RequestDurationHistogram.WithLabelValues(r.Method, r.RequestURI))
-		next.ServeHTTP(w, r)
+
+		// Use the matched route template (e.g. "/v1/{key}") rather than the
+		// raw request URI to keep the label cardinality bounded; the raw URI
+		// embeds every key and would create an unbounded number of series.
+		path := r.URL.Path
+		if route := mux.CurrentRoute(r); route != nil {
+			if tmpl, err := route.GetPathTemplate(); err == nil {
+				path = tmpl
+			}
+		}
+
+		rec := &statusRecorder{ResponseWriter: w, status: http.StatusOK}
+		timer := prometheus.NewTimer(m.RequestDurationHistogram.WithLabelValues(r.Method, path))
+		next.ServeHTTP(rec, r)
 		timer.ObserveDuration()
+
+		m.RequestsTotal.WithLabelValues(strconv.Itoa(rec.status), r.Method).Inc()
 	})
 }
 
@@ -134,6 +160,11 @@ func initializeTransactionLog() error {
 		case err, ok = <-errors:
 
 		case e, ok = <-events:
+			if !ok {
+				// events channel closed: nothing left to replay, avoid
+				// counting the zero-value event delivered on close.
+				continue
+			}
 			switch e.EventType {
 			case internal.EventDelete: // Got a DELETE event!
 				err = internal.Delete(e.Key)
@@ -221,7 +252,9 @@ func main() {
 		log.Printf("Caught the following signal: %+v", sig)
 
 		log.Printf("Gracefully shutting down server..")
-		if err := srv.Shutdown(context.Background()); err != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		if err := srv.Shutdown(ctx); err != nil {
 			log.Printf("Unable to shutdown server: %v", err)
 		} else {
 			log.Printf("Server stopped")
