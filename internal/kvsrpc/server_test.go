@@ -3,6 +3,9 @@ package kvsrpc_test
 import (
 	"context"
 	"net"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -23,7 +26,7 @@ const testToken = "sesame"
 
 // newTestClient spins up an in-process gRPC server over bufconn with the
 // same interceptor chain as cmd/grpc (logging, then optional token auth).
-func newTestClient(t *testing.T, withAuth bool) (kvsv1.KVSServiceClient, *internal.Notifier) {
+func newTestClient(t *testing.T, withAuth bool, transact internal.TransactionLogger) (kvsv1.KVSServiceClient, *internal.Notifier) {
 	t.Helper()
 
 	notifier := internal.NewNotifier()
@@ -39,7 +42,7 @@ func newTestClient(t *testing.T, withAuth bool) (kvsv1.KVSServiceClient, *intern
 		grpc.ChainUnaryInterceptor(unary...),
 		grpc.ChainStreamInterceptor(stream...),
 	)
-	kvsv1.RegisterKVSServiceServer(srv, kvsrpc.NewServer(notifier, nil))
+	kvsv1.RegisterKVSServiceServer(srv, kvsrpc.NewServer(notifier, transact))
 
 	lis := bufconn.Listen(1024 * 1024)
 	go func() {
@@ -62,7 +65,7 @@ func newTestClient(t *testing.T, withAuth bool) (kvsv1.KVSServiceClient, *intern
 }
 
 func TestSetGetDelete(t *testing.T) {
-	client, _ := newTestClient(t, false)
+	client, _ := newTestClient(t, false, nil)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -81,7 +84,7 @@ func TestSetGetDelete(t *testing.T) {
 }
 
 func TestEmptyKeyRejected(t *testing.T) {
-	client, _ := newTestClient(t, false)
+	client, _ := newTestClient(t, false, nil)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -94,7 +97,7 @@ func TestEmptyKeyRejected(t *testing.T) {
 }
 
 func TestWatch(t *testing.T) {
-	client, notifier := newTestClient(t, false)
+	client, notifier := newTestClient(t, false, nil)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -128,7 +131,7 @@ func TestWatch(t *testing.T) {
 }
 
 func TestWatchAllKeys(t *testing.T) {
-	client, notifier := newTestClient(t, false)
+	client, notifier := newTestClient(t, false, nil)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -147,7 +150,7 @@ func TestWatchAllKeys(t *testing.T) {
 }
 
 func TestAuthInterceptor(t *testing.T) {
-	client, notifier := newTestClient(t, true)
+	client, notifier := newTestClient(t, true, nil)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -189,4 +192,59 @@ func TestAuthInterceptor(t *testing.T) {
 	event, err := okStream.Recv()
 	require.NoError(t, err)
 	assert.Equal(t, "grpc-test-auth-watch", event.GetKey())
+}
+
+func TestWatchCancelReleasesSubscription(t *testing.T) {
+	client, notifier := newTestClient(t, false, nil)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	_, err := client.Watch(ctx, &kvsv1.WatchRequest{Key: "grpc-test-cancel"})
+	require.NoError(t, err)
+	require.Eventually(t, func() bool { return notifier.WatcherCount() == 1 },
+		2*time.Second, 10*time.Millisecond, "watch subscription never registered")
+
+	// Cancelling the client context must terminate the server-side handler
+	// and release the subscription.
+	cancel()
+	require.Eventually(t, func() bool { return notifier.WatcherCount() == 0 },
+		2*time.Second, 10*time.Millisecond, "watch subscription never released")
+}
+
+func TestGatewayAuthorizationHeaderAccepted(t *testing.T) {
+	client, _ := newTestClient(t, true, nil)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	// grpc-gateway forwards the HTTP Authorization header under a
+	// "grpcgateway-" prefixed metadata key; the interceptor must accept it.
+	gwCtx := metadata.AppendToOutgoingContext(ctx, "grpcgateway-authorization", "Bearer "+testToken)
+	_, err := client.Set(gwCtx, &kvsv1.SetRequest{Key: "grpc-test-gw", Value: "v"})
+	assert.NoError(t, err)
+}
+
+func TestMutationsAppendToTransactionLog(t *testing.T) {
+	logFile := filepath.Join(t.TempDir(), "transactions.log")
+	transact, err := internal.NewTransactionLogger(logFile)
+	require.NoError(t, err)
+	transact.Run()
+
+	client, _ := newTestClient(t, false, transact)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	_, err = client.Set(ctx, &kvsv1.SetRequest{Key: "grpc-test-log", Value: "persisted"})
+	require.NoError(t, err)
+	_, err = client.Delete(ctx, &kvsv1.DeleteRequest{Key: "grpc-test-log"})
+	require.NoError(t, err)
+
+	transact.Wait() // both events flushed to disk
+	require.NoError(t, transact.Close())
+
+	data, err := os.ReadFile(logFile) // #nosec G304 -- test-owned temp path
+	require.NoError(t, err)
+	content := string(data)
+	assert.Contains(t, content, "grpc-test-log\tpersisted")
+	lines := strings.Split(strings.TrimSpace(content), "\n")
+	assert.Len(t, lines, 2, "expected one PUT and one DELETE entry")
 }
