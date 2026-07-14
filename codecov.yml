@@ -1,0 +1,8 @@
+# Exclude protoc/buf-generated code and the thin binary entrypoints
+# (exercised end-to-end, not by unit tests) from coverage reporting.
+ignore:
+  - "api/**/*.pb.go"
+  - "api/**/*.pb.gw.go"
+  - "cmd/grpc/**"
+  - "cmd/grpcclient/**"
+  - "examples/**"

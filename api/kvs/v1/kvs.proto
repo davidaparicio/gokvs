@@ -1,0 +1,75 @@
+syntax = "proto3";
+
+package kvs.v1;
+
+import "google/api/annotations.proto";
+
+option go_package = "github.com/davidaparicio/gokvs/api/kvs/v1;kvsv1";
+
+// KVSService is a simple key-value store with change notifications.
+service KVSService {
+  // Get returns the value stored under a key.
+  // Returns NOT_FOUND if the key does not exist.
+  rpc Get(GetRequest) returns (GetResponse) {
+    option (google.api.http) = {get: "/v1/kv/{key}"};
+  }
+
+  // Set stores a value under a key, creating or overwriting it.
+  rpc Set(SetRequest) returns (SetResponse) {
+    option (google.api.http) = {
+      put: "/v1/kv/{key}"
+      body: "*"
+    };
+  }
+
+  // Delete removes a key. Deleting a missing key is not an error.
+  rpc Delete(DeleteRequest) returns (DeleteResponse) {
+    option (google.api.http) = {delete: "/v1/kv/{key}"};
+  }
+
+  // Watch streams change notifications for a key.
+  // An empty key subscribes to changes on every key.
+  // The stream stays open until the client cancels.
+  rpc Watch(WatchRequest) returns (stream WatchResponse) {
+    option (google.api.http) = {get: "/v1/watch/{key}"};
+  }
+}
+
+message GetRequest {
+  string key = 1;
+}
+
+message GetResponse {
+  string value = 1;
+}
+
+message SetRequest {
+  string key = 1;
+  string value = 2;
+}
+
+message SetResponse {}
+
+message DeleteRequest {
+  string key = 1;
+}
+
+message DeleteResponse {}
+
+// EventType describes what happened to a watched key.
+enum EventType {
+  EVENT_TYPE_UNSPECIFIED = 0;
+  EVENT_TYPE_SET = 1;
+  EVENT_TYPE_DELETE = 2;
+}
+
+message WatchRequest {
+  string key = 1;
+}
+
+message WatchResponse {
+  EventType type = 1;
+  string key = 2;
+  // Value is set for EVENT_TYPE_SET events and empty for deletes.
+  string value = 3;
+}

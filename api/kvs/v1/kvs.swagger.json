@@ -1,0 +1,234 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "kvs/v1/kvs.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "KVSService"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/v1/kv/{key}": {
+      "get": {
+        "summary": "Get returns the value stored under a key.\nReturns NOT_FOUND if the key does not exist.",
+        "operationId": "KVSService_Get",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1GetResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "KVSService"
+        ]
+      },
+      "delete": {
+        "summary": "Delete removes a key. Deleting a missing key is not an error.",
+        "operationId": "KVSService_Delete",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1DeleteResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "KVSService"
+        ]
+      },
+      "put": {
+        "summary": "Set stores a value under a key, creating or overwriting it.",
+        "operationId": "KVSService_Set",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1SetResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/KVSServiceSetBody"
+            }
+          }
+        ],
+        "tags": [
+          "KVSService"
+        ]
+      }
+    },
+    "/v1/watch/{key}": {
+      "get": {
+        "summary": "Watch streams change notifications for a key.\nAn empty key subscribes to changes on every key.\nThe stream stays open until the client cancels.",
+        "operationId": "KVSService_Watch",
+        "responses": {
+          "200": {
+            "description": "A successful response.(streaming responses)",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "result": {
+                  "$ref": "#/definitions/v1WatchResponse"
+                },
+                "error": {
+                  "$ref": "#/definitions/rpcStatus"
+                }
+              },
+              "title": "Stream result of v1WatchResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "KVSService"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "KVSServiceSetBody": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string"
+        }
+      }
+    },
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "rpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    },
+    "v1DeleteResponse": {
+      "type": "object"
+    },
+    "v1EventType": {
+      "type": "string",
+      "enum": [
+        "EVENT_TYPE_UNSPECIFIED",
+        "EVENT_TYPE_SET",
+        "EVENT_TYPE_DELETE"
+      ],
+      "default": "EVENT_TYPE_UNSPECIFIED",
+      "description": "EventType describes what happened to a watched key."
+    },
+    "v1GetResponse": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string"
+        }
+      }
+    },
+    "v1SetResponse": {
+      "type": "object"
+    },
+    "v1WatchResponse": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "$ref": "#/definitions/v1EventType"
+        },
+        "key": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string",
+          "description": "Value is set for EVENT_TYPE_SET events and empty for deletes."
+        }
+      }
+    }
+  }
+}
