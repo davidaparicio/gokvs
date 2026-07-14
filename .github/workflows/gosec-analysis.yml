@@ -34,7 +34,8 @@ jobs:
         uses: securego/gosec@9e6a9843d7a4a6e3e9a8539b02612c8a4aa3f889 # v2.27.1
         with:
           # we let the report trigger content trigger a failure using the GitHub Security features.
-          args: '-no-fail -fmt sarif -out results.sarif ./...'
+          # -exclude-dir skips protoc/buf-generated code (api/) and vendored protos
+          args: '-no-fail -exclude-dir=api -exclude-dir=third_party -fmt sarif -out results.sarif ./...'
       - name: Fix SARIF relationships
         run: |
           jq 'if .runs[0].tool.driver.rules then 
