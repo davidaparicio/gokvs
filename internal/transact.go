@@ -114,8 +114,6 @@ func (l *TransactionLog) ReadEvents() (<-chan Event, <-chan error) {
 	outError := make(chan error, 1)
 
 	go func() {
-		var e Event
-
 		defer close(outEvent)
 		defer close(outError)
 
@@ -126,6 +124,11 @@ func (l *TransactionLog) ReadEvents() (<-chan Event, <-chan error) {
 		}
 
 		for scanner.Scan() {
+			// Declared per line so an empty field (e.g. the value of a
+			// DELETE event) does not inherit the previous event's value,
+			// which fmt.Sscanf leaves untouched when it stops at EOF.
+			var e Event
+
 			line := scanner.Text()
 
 			n, err := fmt.Sscanf(
