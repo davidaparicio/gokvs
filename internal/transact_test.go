@@ -151,6 +151,67 @@ func TestWritePut(t *testing.T) {
 	}
 }
 
+// TestDeleteEventHasNoStaleValue ensures a DELETE event replayed from the log
+// does not inherit the value of a preceding PUT event. fmt.Sscanf leaves the
+// value field untouched when it stops at the empty DELETE value, so the parsed
+// Event must be reset per line.
+func TestDeleteEventHasNoStaleValue(t *testing.T) {
+	tmpfile, err := os.CreateTemp("", "test-delete-stale")
+	if err != nil {
+		t.Fatalf("Cannot create temporary file: %v", err)
+	}
+	filename := tmpfile.Name()
+	if err := tmpfile.Close(); err != nil {
+		t.Fatalf("Failed to close temporary file: %v", err)
+	}
+	defer func() {
+		if err := os.Remove(filename); err != nil {
+			t.Logf("Failed to remove temporary file %s: %v", filename, err)
+		}
+	}()
+
+	writer, err := NewTransactionLogger(filename)
+	if err != nil {
+		t.Fatalf("Failed to create transaction logger: %v", err)
+	}
+	writer.Run()
+	writer.WritePut("my-key", "my-value")
+	writer.WriteDelete("my-key")
+	writer.Wait()
+	if err := writer.Close(); err != nil {
+		t.Fatalf("Failed to close transaction logger: %v", err)
+	}
+
+	reader, err := NewTransactionLogger(filename)
+	if err != nil {
+		t.Fatalf("Failed to create read logger: %v", err)
+	}
+	defer func() {
+		if err := reader.Close(); err != nil {
+			t.Errorf("Failed to close read logger: %v", err)
+		}
+	}()
+
+	events, errs := reader.ReadEvents()
+	var got []Event
+	for e := range events {
+		got = append(got, e)
+	}
+	if err := <-errs; err != nil {
+		t.Fatalf("Error reading events: %v", err)
+	}
+
+	if len(got) != 2 {
+		t.Fatalf("Expected 2 events, got %d", len(got))
+	}
+	if got[1].EventType != EventDelete {
+		t.Fatalf("Expected second event to be DELETE, got type %d", got[1].EventType)
+	}
+	if got[1].Value != "" {
+		t.Errorf("DELETE event carries a stale value: got %q, want \"\"", got[1].Value)
+	}
+}
+
 func TestTransactionLoggerSimple(t *testing.T) {
 	// Create temporary file for testing
 	tmpfile, err := os.CreateTemp("", "test-transaction-log")
