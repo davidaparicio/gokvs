@@ -5,9 +5,9 @@ pull_request_rules:
         message: Thank you for contriubting! Your pull request will be updated from main and then merged automatically (do not update manually, and be sure to [allow changes to be pushed to your fork](https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/allowing-changes-to-a-pull-request-branch-created-from-a-fork)).
       merge:
         method: squash
-        commit_message_template: |-
-          {{ title }} (#{{ number }})
-          {{ body }}
+        commit_message_format:
+          title: pr-title
+          body: pr-body
     conditions:
       - -title~=(WIP|wip)
       - -label~=(blocked|do-not-merge|no-squash|two-approvers)
@@ -29,9 +29,9 @@ pull_request_rules:
         message: Automatically approving PRs from Dependabot
       merge:
         method: squash
-        commit_message_template: |-
-          {{ title }} (#{{ number }})
-          {{ body }}
+        commit_message_format:
+          title: pr-title
+          body: pr-body
     conditions:
       - -title~=(WIP|wip)
       - -label~=(blocked|do-not-merge)
