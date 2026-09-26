@@ -64,7 +64,7 @@ func NewMetrics(reg prometheus.Registerer) *Metrics {
 			Name:      "request_duration_seconds",
 			Help:      "Seconds spent serving HTTP requests.",
 			Buckets:   prometheus.DefBuckets,
-		}, []string{"code", "method"}), //[]string{"path"})
+		}, []string{"method", "path"}),
 	}
 	reg.MustRegister(m.Info)
 	reg.MustRegister(m.QueriesInflight)
