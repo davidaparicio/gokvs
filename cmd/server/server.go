@@ -71,6 +71,7 @@ func keyValuePutHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	key := vars["key"]
 
+	r.Body = http.MaxBytesReader(w, r.Body, internal.MaxValueBytes)
 	value, err := io.ReadAll(r.Body)
 	defer func() {
 		if err := r.Body.Close(); err != nil {
@@ -78,6 +79,11 @@ func keyValuePutHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 	if err != nil {
+		var maxErr *http.MaxBytesError
+		if errors.As(err, &maxErr) {
+			http.Error(w, err.Error(), http.StatusRequestEntityTooLarge)
+			return
+		}
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -178,6 +184,15 @@ func initializeTransactionLog() error {
 	log.Printf("%d events replayed\n", count)
 
 	transact.Run()
+
+	// Drain write errors: the errors channel only buffers one value, so
+	// leaving it unread would block the logger goroutine on the second error
+	// and stall every subsequent PUT/DELETE (and Close on shutdown).
+	go func() {
+		for err := range transact.Err() {
+			log.Printf("Transaction log error: %v", err)
+		}
+	}()
 
 	return err
 }

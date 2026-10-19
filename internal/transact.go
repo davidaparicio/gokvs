@@ -9,6 +9,15 @@ import (
 	"sync"
 )
 
+// MaxValueBytes is the largest value accepted by the server. It bounds the
+// size of a transaction log line so the log can always be read back.
+const MaxValueBytes = 1 << 20 // 1 MiB
+
+// maxLogLineBytes is the bufio.Scanner limit used when replaying the log.
+// A line holds an escaped key (bounded by the 1 MiB default max header size)
+// and an escaped value; escaping can triple their size.
+const maxLogLineBytes = 8 << 20 // 8 MiB
+
 type EventType byte
 
 const (
@@ -37,14 +46,17 @@ type TransactionLog struct { // implements TransactionLogger
 	wg           *sync.WaitGroup
 }
 
+// Keys are escaped with url.PathEscape so whitespace (which would split the
+// tab-separated fields on replay) is encoded, while '+' stays unchanged for
+// compatibility with logs written before keys were escaped.
 func (l *TransactionLog) WritePut(key, value string) {
 	l.wg.Add(1)
-	l.events <- Event{EventType: EventPut, Key: key, Value: url.QueryEscape(value)}
+	l.events <- Event{EventType: EventPut, Key: url.PathEscape(key), Value: url.QueryEscape(value)}
 }
 
 func (l *TransactionLog) WriteDelete(key string) {
 	l.wg.Add(1)
-	l.events <- Event{EventType: EventDelete, Key: key}
+	l.events <- Event{EventType: EventDelete, Key: url.PathEscape(key)}
 }
 
 func (l *TransactionLog) Err() <-chan error {
@@ -110,6 +122,7 @@ func (l *TransactionLog) Close() error {
 
 func (l *TransactionLog) ReadEvents() (<-chan Event, <-chan error) {
 	scanner := bufio.NewScanner(l.file)
+	scanner.Buffer(make([]byte, 0, bufio.MaxScanTokenSize), maxLogLineBytes)
 	outEvent := make(chan Event)
 	outError := make(chan error, 1)
 
@@ -155,12 +168,19 @@ func (l *TransactionLog) ReadEvents() (<-chan Event, <-chan error) {
 				return
 			}
 
+			uk, err := url.PathUnescape(e.Key)
+			if err != nil {
+				outError <- fmt.Errorf("key decoding failure: %w", err)
+				return
+			}
+
 			uv, err := url.QueryUnescape(e.Value)
 			if err != nil {
 				outError <- fmt.Errorf("value decoding failure: %w", err)
 				return
 			}
 
+			e.Key = uk
 			e.Value = uv
 			l.lastSequence = e.Sequence // Update last used sequence #
 

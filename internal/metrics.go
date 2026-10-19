@@ -2,7 +2,6 @@ package internal
 
 import (
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
 type Metrics struct {
@@ -54,12 +53,12 @@ func NewMetrics(reg prometheus.Registerer) *Metrics {
 			Name:      "405",
 			Help:      "total Not Allowed HTTP Error",
 		}),
-		RequestsTotal: promauto.NewCounterVec(prometheus.CounterOpts{
+		RequestsTotal: prometheus.NewCounterVec(prometheus.CounterOpts{
 			Subsystem: "http",
 			Name:      "requests_total",
 			Help:      "total HTTP requests processed",
 		}, []string{"code", "method"}),
-		RequestDurationHistogram: promauto.NewHistogramVec(prometheus.HistogramOpts{
+		RequestDurationHistogram: prometheus.NewHistogramVec(prometheus.HistogramOpts{
 			Subsystem: "http",
 			Name:      "request_duration_seconds",
 			Help:      "Seconds spent serving HTTP requests.",
