@@ -108,6 +108,30 @@ func TestKeyValueHandlers(t *testing.T) {
 	}
 }
 
+func TestPutValueTooLarge(t *testing.T) {
+	reg := prometheus.NewRegistry()
+	m = internal.NewMetrics(reg)
+
+	router := setupRouter()
+
+	body := bytes.Repeat([]byte("x"), internal.MaxValueBytes+1)
+	req, err := http.NewRequest("PUT", "/v1/too-large", bytes.NewReader(body))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rr := httptest.NewRecorder()
+	router.ServeHTTP(rr, req)
+
+	if status := rr.Code; status != http.StatusRequestEntityTooLarge {
+		t.Errorf("handler returned wrong status code: got %v want %v",
+			status, http.StatusRequestEntityTooLarge)
+	}
+	if _, err := internal.Get("too-large"); err == nil {
+		t.Error("oversized value was stored")
+	}
+}
+
 func TestHealthCheck(t *testing.T) {
 	router := setupRouter()
 	router.HandleFunc("/healthz", checkMuxHandler)
