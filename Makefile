@@ -49,8 +49,8 @@ compile: mod ## Compile for the local architecture ⚙
 	-s -w \
 	-X '${PKG_LDFLAGS}.Version=$(version)' \
 	-X '${PKG_LDFLAGS}.BuildDate=$(DATE)' \
-	-X '${PKG_LDFLAGS}.Revision=$(COMMIT)'" \
-	-o bin/$(target) .
+	-X '${PKG_LDFLAGS}.GitCommit=$(COMMIT)'" \
+	-o bin/$(target) ./cmd/server
 
 .PHONY: run
 run: ## Run the server
@@ -59,7 +59,7 @@ run: ## Run the server
 	-s -w \
 	-X '${PKG_LDFLAGS}.Version=$(version)' \
 	-X '${PKG_LDFLAGS}.BuildDate=$(DATE)' \
-	-X '${PKG_LDFLAGS}.Revision=$(COMMIT)'" \
+	-X '${PKG_LDFLAGS}.GitCommit=$(COMMIT)'" \
 	cmd/server/server.go
 
 # -X 'main.Version=$(version)' \
