@@ -28,11 +28,8 @@ func TestNewMetrics(t *testing.T) {
 	gathered, err := reg.Gather()
 	assert.NoError(t, err)
 
-	// We should have 9 metric families (one for each metric)
-	//assert.Equal(t, 9, len(gathered))
-
-	// We should have 6 metric families since RequestsTotal and RequestDurationHistogram
-	// are registered by promauto
+	// We should have 6 metric families: the 3 vectors (Info, RequestsTotal and
+	// RequestDurationHistogram) are not gathered until a label set is used
 	assert.Equal(t, 6, len(gathered))
 
 	// Initialize metrics with labels
@@ -58,4 +55,13 @@ func TestNewMetrics(t *testing.T) {
 	//assert.Contains(t, metrics.RequestDurationHistogram.WithLabelValues("dummy").Desc().String(), "http")
 	//assert.Contains(t, metrics.RequestDurationHistogram.MustCurryWith(prometheus.Labels{"handler": "dummy"}).Desc().String(), "http")
 	//assert.Contains(t, metrics.RequestDurationHistogram.MetricVec.Desc().String(), "http")
+}
+
+// TestNewMetricsTwice ensures NewMetrics only registers on the given registry,
+// so it can be called once per registry without a duplicate-registration panic.
+func TestNewMetricsTwice(t *testing.T) {
+	assert.NotPanics(t, func() {
+		NewMetrics(prometheus.NewRegistry())
+		NewMetrics(prometheus.NewRegistry())
+	})
 }

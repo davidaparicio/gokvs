@@ -2,6 +2,7 @@ package internal
 
 import (
 	"os"
+	"strings"
 	"testing"
 	"time"
 )
@@ -148,6 +149,142 @@ func TestWritePut(t *testing.T) {
 
 	if tl.lastSequence != tl2.lastSequence {
 		t.Errorf("Last sequence mismatch (%d vs %d)", tl.lastSequence, tl2.lastSequence)
+	}
+}
+
+// TestDeleteEventHasNoStaleValue ensures a DELETE event replayed from the log
+// does not inherit the value of a preceding PUT event. fmt.Sscanf leaves the
+// value field untouched when it stops at the empty DELETE value, so the parsed
+// Event must be reset per line.
+func TestDeleteEventHasNoStaleValue(t *testing.T) {
+	tmpfile, err := os.CreateTemp("", "test-delete-stale")
+	if err != nil {
+		t.Fatalf("Cannot create temporary file: %v", err)
+	}
+	filename := tmpfile.Name()
+	if err := tmpfile.Close(); err != nil {
+		t.Fatalf("Failed to close temporary file: %v", err)
+	}
+	defer func() {
+		if err := os.Remove(filename); err != nil {
+			t.Logf("Failed to remove temporary file %s: %v", filename, err)
+		}
+	}()
+
+	writer, err := NewTransactionLogger(filename)
+	if err != nil {
+		t.Fatalf("Failed to create transaction logger: %v", err)
+	}
+	writer.Run()
+	writer.WritePut("my-key", "my-value")
+	writer.WriteDelete("my-key")
+	writer.Wait()
+	if err := writer.Close(); err != nil {
+		t.Fatalf("Failed to close transaction logger: %v", err)
+	}
+
+	reader, err := NewTransactionLogger(filename)
+	if err != nil {
+		t.Fatalf("Failed to create read logger: %v", err)
+	}
+	defer func() {
+		if err := reader.Close(); err != nil {
+			t.Errorf("Failed to close read logger: %v", err)
+		}
+	}()
+
+	events, errs := reader.ReadEvents()
+	var got []Event
+	for e := range events {
+		got = append(got, e)
+	}
+	if err := <-errs; err != nil {
+		t.Fatalf("Error reading events: %v", err)
+	}
+
+	if len(got) != 2 {
+		t.Fatalf("Expected 2 events, got %d", len(got))
+	}
+	if got[1].EventType != EventDelete {
+		t.Fatalf("Expected second event to be DELETE, got type %d", got[1].EventType)
+	}
+	if got[1].Value != "" {
+		t.Errorf("DELETE event carries a stale value: got %q, want \"\"", got[1].Value)
+	}
+}
+
+// TestReplayKeysAndLargeValues ensures keys containing whitespace survive the
+// tab-separated log format and that values larger than bufio.Scanner's default
+// 64 KiB token size can still be replayed.
+func TestReplayKeysAndLargeValues(t *testing.T) {
+	tmpfile, err := os.CreateTemp("", "test-replay-escaping")
+	if err != nil {
+		t.Fatalf("Cannot create temporary file: %v", err)
+	}
+	filename := tmpfile.Name()
+	if err := tmpfile.Close(); err != nil {
+		t.Fatalf("Failed to close temporary file: %v", err)
+	}
+	defer func() {
+		if err := os.Remove(filename); err != nil {
+			t.Logf("Failed to remove temporary file %s: %v", filename, err)
+		}
+	}()
+
+	bigValue := strings.Repeat("x y\t", MaxValueBytes/4)
+	want := []Event{
+		{EventType: EventPut, Key: "key with spaces", Value: "v"},
+		{EventType: EventPut, Key: "tab\tkey", Value: "v"},
+		{EventType: EventPut, Key: "a+b%2F/c", Value: "v"},
+		{EventType: EventPut, Key: "big", Value: bigValue},
+		{EventType: EventDelete, Key: "key with spaces"},
+	}
+
+	writer, err := NewTransactionLogger(filename)
+	if err != nil {
+		t.Fatalf("Failed to create transaction logger: %v", err)
+	}
+	writer.Run()
+	for _, e := range want {
+		if e.EventType == EventPut {
+			writer.WritePut(e.Key, e.Value)
+		} else {
+			writer.WriteDelete(e.Key)
+		}
+	}
+	writer.Wait()
+	if err := writer.Close(); err != nil {
+		t.Fatalf("Failed to close transaction logger: %v", err)
+	}
+
+	reader, err := NewTransactionLogger(filename)
+	if err != nil {
+		t.Fatalf("Failed to create read logger: %v", err)
+	}
+	defer func() {
+		if err := reader.Close(); err != nil {
+			t.Errorf("Failed to close read logger: %v", err)
+		}
+	}()
+
+	events, errs := reader.ReadEvents()
+	var got []Event
+	for e := range events {
+		got = append(got, e)
+	}
+	if err := <-errs; err != nil {
+		t.Fatalf("Error reading events: %v", err)
+	}
+
+	if len(got) != len(want) {
+		t.Fatalf("Expected %d events, got %d", len(want), len(got))
+	}
+	for i := range want {
+		if got[i].EventType != want[i].EventType || got[i].Key != want[i].Key || got[i].Value != want[i].Value {
+			t.Errorf("Event %d: got type=%d key=%q len(value)=%d, want type=%d key=%q len(value)=%d",
+				i, got[i].EventType, got[i].Key, len(got[i].Value),
+				want[i].EventType, want[i].Key, len(want[i].Value))
+		}
 	}
 }
 
